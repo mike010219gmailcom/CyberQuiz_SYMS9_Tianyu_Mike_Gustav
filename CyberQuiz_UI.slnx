@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="CyberQuiz_API/CyberQuiz_API.csproj" />
+  <Project Path="CyberQuiz_BLL/CyberQuiz_BLL.csproj" />
+  <Project Path="CyberQuiz_DAL/CyberQuiz_DAL.csproj" />
+  <Project Path="CyberQuiz_Shared/CyberQuiz_Shared.csproj" />
+  <Project Path="CyberQuiz_UI/CyberQuiz_UI.csproj" />
+</Solution>
