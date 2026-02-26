@@ -38,6 +38,9 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
+// Register fake services for UI development
+builder.Services.AddScoped<CyberQuiz_UI.Services.IAuthService, CyberQuiz_UI.Services.FakeAuthService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

@@ -69,6 +69,31 @@
     </nav>
 </div>
 
+<nav class="nav flex-column">
+
+    <NavLink href="/" class="nav-link text-white" Match="NavLinkMatch.All">
+        Start
+    </NavLink>
+
+    <NavLink href="/home" class="nav-link text-white">
+        Hem
+    </NavLink>
+
+    <NavLink href="/profile" class="nav-link text-white">
+        Profil
+    </NavLink>
+
+    <NavLink href="/login" class="nav-link text-white">
+        Logga in
+    </NavLink>
+
+    <NavLink href="/register" class="nav-link text-white">
+        Registrera
+    </NavLink>
+
+</nav>
+
+
 @code {
     private string? currentUrl;
 
