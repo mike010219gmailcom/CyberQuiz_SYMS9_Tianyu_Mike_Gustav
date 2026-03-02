@@ -4,9 +4,8 @@ using System.Text;
 
 namespace CyberQuiz_BLL.DTOs
 {
-    public class CategoryDTO
+    public class AnswerResultDto
     {
-        public int ID { get; set; }
-        public string Name { get; set; }
+        public bool IsCorrect { get; set; }
     }
 }
