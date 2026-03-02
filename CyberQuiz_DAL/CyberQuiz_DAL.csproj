@@ -10,4 +10,8 @@
     <ProjectReference Include="..\CyberQuiz_Shared\CyberQuiz_Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Test\" />
+  </ItemGroup>
+
 </Project>
