@@ -1,0 +1,82 @@
+﻿@page "/login"
+@using System.ComponentModel.DataAnnotations
+@inject NavigationManager Navigation
+@inject CyberQuiz_UI.Services.IAuthService AuthService
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title mb-3">Logga in</h3>
+
+                    <EditForm Model="loginModel" OnValidSubmit="HandleValidSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="mb-3">
+                            <label class="form-label">Användarnamn</label>
+                            <InputText class="form-control" @bind-Value="loginModel.Username" />
+                            <ValidationMessage For="() => loginModel.Username" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Lösenord</label>
+                            <InputText class="form-control" type="password" @bind-Value="loginModel.Password" />
+                            <ValidationMessage For="() => loginModel.Password" />
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <InputCheckbox class="form-check-input" @bind-Value="loginModel.RememberMe" />
+                            <label class="form-check-label">Kom ihåg mig</label>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger" role="alert">@errorMessage</div>
+                        }
+
+                        <button type="submit" class="btn btn-primary">Logga in</button>
+                        <button type="button" class="btn btn-link" @onclick="GoToRegister">Registrera</button>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginModel = new();
+    private string? errorMessage;
+
+    private async Task HandleValidSubmit()
+    {
+        errorMessage = null;
+        var ok = await AuthService.LoginAsync(loginModel.Username, loginModel.Password, loginModel.RememberMe);
+        if (ok)
+        {
+            // kmr till hemsidan ("/")
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = "Fel användarnamn eller lösenord.";
+        }
+    }
+
+    private void GoToRegister()
+    {
+        Navigation.NavigateTo("/register");
+    }
+
+    private class LoginModel
+    {
+        [Required(ErrorMessage = "Användarnamn krävs")]
+        public string? Username { get; set; }
+
+        [Required(ErrorMessage = "Lösenord krävs")]
+        public string? Password { get; set; }
+
+        public bool RememberMe { get; set; }
+    }
+}

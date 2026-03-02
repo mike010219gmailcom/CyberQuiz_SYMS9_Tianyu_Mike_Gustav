@@ -7,7 +7,7 @@ public class UserResult
 {
     public int Id { get; set; }
 
-
+    
     [Required, MaxLength(450)]
     public required string UserId { get; set; }
 
@@ -15,7 +15,7 @@ public class UserResult
     public int QuestionId { get; set; }
     public Question? Question { get; set; }
 
-
+  
     [ForeignKey(nameof(SelectedAnswerOption))]
     public int SelectedAnswerOptionId { get; set; }
     public AnswerOption? SelectedAnswerOption { get; set; }

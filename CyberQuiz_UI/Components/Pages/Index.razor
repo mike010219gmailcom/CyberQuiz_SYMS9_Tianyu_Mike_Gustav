@@ -1,0 +1,31 @@
+﻿@page "/index"
+
+<h1>CyberQuiz</h1>
+<p>Train. Secure. Evolve.</p>
+
+<a href="/login">Logga in</a>
+<br />
+<a href="/register">Registrera</a>
+
+
+@*UI -> API (Refererar inte till varandra)
+	// API -> BLL & Shared (class library)
+	// BLL -> DAL & Shared
+	// DAL -> shared (models)
+
+	Scenario
+	Användare svarar på en fråga
+	1. UI -> skickar svaret till API
+	2. API -> skickar svaret till BLL
+	3. BLL -> Räkna rätt/fel, uppdatera poäng, logga resultat
+	4. BLL -> DAL -> Spara resultat i databasen
+	5. BLL -> räknar progression
+	6. API -> skickar progression och feedback till UI
+	7. UI -> visar feedback och progression till användaren
+
+	UI -> Pages
+	API -> Controllers, endpoints Post Get Put Delete
+	BLL -> Services, logik, regler rätt/fel, progression
+	DAL -> migration, dbcontext, repository, modeller
+	Shared -> DTOs, objekt som används mellan lager, modeller som delas mellan UI och API
+*@

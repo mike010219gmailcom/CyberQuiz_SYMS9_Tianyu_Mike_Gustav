@@ -1,0 +1,12 @@
+﻿@using Microsoft.AspNetCore.Authorization;
+@page "/quiz/{SubCategoryId:int}"
+@attribute [Authorize]
+
+<h3>Quiz</h3>
+
+<p>Här visas frågor.</p>
+
+@code {
+    [Parameter]
+    public int SubCategoryId { get; set; }
+}
