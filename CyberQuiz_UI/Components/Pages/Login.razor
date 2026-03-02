@@ -1,9 +1,9 @@
-﻿@page "/login"
+﻿@* @* @page "/l"
 @using System.ComponentModel.DataAnnotations
 @inject NavigationManager Navigation
-@inject CyberQuiz_UI.Services.IAuthService AuthService
-
-<div class="container mt-5">
+@* @inject CyberQuiz_UI.Services.IAuthService AuthService
+ *@
+@* <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card shadow-sm">
@@ -49,20 +49,20 @@
     private LoginModel loginModel = new();
     private string? errorMessage;
 
-    private async Task HandleValidSubmit()
-    {
-        errorMessage = null;
-        var ok = await AuthService.LoginAsync(loginModel.Username, loginModel.Password, loginModel.RememberMe);
-        if (ok)
-        {
-            // kmr till hemsidan ("/")
-            Navigation.NavigateTo("/");
-        }
-        else
-        {
-            errorMessage = "Fel användarnamn eller lösenord.";
-        }
-    }
+    // private async Task HandleValidSubmit()
+    // {
+    //     errorMessage = null;
+    //     var ok = await AuthService.LoginAsync(loginModel.Username, loginModel.Password, loginModel.RememberMe);
+    //     if (ok)
+    //     {
+    //         // kmr till hemsidan ("/")
+    //         Navigation.NavigateTo("/");
+    //     }
+    //     else
+    //     {
+    //         errorMessage = "Fel användarnamn eller lösenord.";
+    //     }
+    // }
 
     private void GoToRegister()
     {
@@ -79,4 +79,4 @@
 
         public bool RememberMe { get; set; }
     }
-}
+}  *@
