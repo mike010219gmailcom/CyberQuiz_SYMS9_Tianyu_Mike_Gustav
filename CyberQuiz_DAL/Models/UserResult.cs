@@ -23,6 +23,4 @@ public class UserResult
     public bool IsCorrect { get; set; }
 
     public DateTime AnsweredAtUtc { get; set; } = DateTime.UtcNow;
-
-    public int SubCategoryId { get; set; }
 }
