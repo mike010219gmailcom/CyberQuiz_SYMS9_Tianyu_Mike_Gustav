@@ -1,10 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using CyberQuiz.DAL.Models;
 
-namespace CyberQuiz_DAL.Repositories
+namespace CyberQuiz.DAL.Repositories;
+
+public interface IUserResultRepository
 {
-    internal class IUserResultRepository
-    {
-    }
+    Task AddResultAsync(UserResult result, CancellationToken ct = default);
+
+    Task<List<UserResult>> GetResultsForUserAndSubCategoryAsync(
+        string userId,
+        int subCategoryId,
+        CancellationToken ct = default);
+
+    Task<double> GetAccuracyForUserInSubCategoryAsync(
+        string userId,
+        int subCategoryId,
+        CancellationToken ct = default);
 }

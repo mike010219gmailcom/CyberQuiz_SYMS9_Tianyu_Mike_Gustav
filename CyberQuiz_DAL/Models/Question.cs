@@ -7,12 +7,15 @@ public class Question
 {
     public int Id { get; set; }
 
-    [Required, MaxLength(800)]
-    public required string Text { get; set; }
-
-    [ForeignKey(nameof(SubCategory))]
+    [Required]
     public int SubCategoryId { get; set; }
-    public SubCategory? SubCategory { get; set; }
+
+    [ForeignKey(nameof(SubCategoryId))]
+    public SubCategory SubCategory { get; set; } = null!;
+
+    [Required]
+    [MaxLength(500)]
+    public string Text { get; set; } = string.Empty;
 
     public ICollection<AnswerOption> AnswerOptions { get; set; } = new List<AnswerOption>();
 }
