@@ -12,6 +12,6 @@ namespace CyberQuiz_BLL.DTOs
         public string CategoryName { get; set;}
         public string SubCategoryName { get; set; }
 
-        public DateTime CompletedAtUtc { get; set; }
+        public DateTimeOffset CompletedAtUtc { get; set; }
     }
 }

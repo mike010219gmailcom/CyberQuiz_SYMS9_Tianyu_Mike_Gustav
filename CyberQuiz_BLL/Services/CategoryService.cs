@@ -1,4 +1,5 @@
-﻿using CyberQuiz_BLL.DTOs;
+﻿using CyberQuiz.DAL.Data;
+using CyberQuiz_BLL.DTOs;
 using CyberQuiz_DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -15,7 +16,7 @@ namespace CyberQuiz_BLL.Services
             _context = context; 
         }
 
-        public async Task<List<CategoryDto>> GetAllCategoryAsync()
+        public async Task<List<CategoryDto>> GetAllCategoriesAsync()
         {
             return await _context.Categories
                 .Select(c => new CategoryDto

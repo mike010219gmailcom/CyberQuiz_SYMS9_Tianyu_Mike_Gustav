@@ -1,4 +1,5 @@
-﻿using CyberQuiz_BLL.DTOs;
+﻿using CyberQuiz.DAL.Data;
+using CyberQuiz_BLL.DTOs;
 using CyberQuiz_DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -15,11 +16,16 @@ namespace CyberQuiz_BLL.Services
             _context = context;
         }
 
-        public async Task<List<SubCategoryDto>> GetAllSubCategoryAsync()
+        public async Task<List<SubCategoryDto>> GetSubCategoriesByCategoryIdAsync(int categoryId)
         {
-            // DbContext only includes Categories
-            // Show subCategory with condition CategoryId
-
+            return await _context.SubCategories
+                .Where(sc => sc.CategoryId == categoryId)
+                .Select(sc => new SubCategoryDto
+                {
+                    Id = sc.Id,
+                    Name = sc.Name
+            })
+            .ToListAsync();
         }
     }
 }
