@@ -7,16 +7,17 @@ public class SubCategory
 {
     public int Id { get; set; }
 
-    [Required, MaxLength(120)]
-    public required string Name { get; set; }
-
-    [MaxLength(500)]
-    public string? Description { get; set; }
-
-    [ForeignKey(nameof(Category))]
+    [Required]
     public int CategoryId { get; set; }
-    public Category? Category { get; set; }
 
+    [ForeignKey(nameof(CategoryId))]
+    public Category Category { get; set; } = null!;
+
+    [Required]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required]
     public int Order { get; set; }
 
     public ICollection<Question> Questions { get; set; } = new List<Question>();

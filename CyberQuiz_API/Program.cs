@@ -1,28 +1,50 @@
-using CyberQuiz_DAL.Data;
-using Microsoft.EntityFrameworkCore;
+using CyberQuiz.DAL;
+using CyberQuiz.DAL.Data;
+using CyberQuiz.DAL.Seeding;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-
-builder.Services.AddDbContext<CyberQuizDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-// Add services to the container.
-
+// Controllers / API
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// DAL (DbContext + repositories)
+builder.Services.AddDal(builder.Configuration);
+
+// Identity (behövs för default-user seed)
+builder.Services
+    .AddIdentity<IdentityUser, IdentityRole>()
+    .AddEntityFrameworkStores<CyberQuizDbContext>()
+    .AddDefaultTokenProviders();
+
+// Auth (cookies är enklast om UI+API kör samma host, annars JWT)
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/login";
+    options.AccessDeniedPath = "/access-denied";
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Seed + migrations
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<CyberQuizDbContext>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    await DatabaseSeeder.SeedAsync(db, userManager);
+}
+
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

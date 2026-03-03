@@ -7,22 +7,31 @@ public class UserResult
 {
     public int Id { get; set; }
 
-    
-    [Required, MaxLength(450)]
-    public required string UserId { get; set; }
+    [Required]
+    [MaxLength(450)]
+    public string UserId { get; set; } = string.Empty;
 
-    [ForeignKey(nameof(Question))]
+    [Required]
+    public int SubCategoryId { get; set; }
+
+    [ForeignKey(nameof(SubCategoryId))]
+    public SubCategory SubCategory { get; set; } = null!;
+
+    [Required]
     public int QuestionId { get; set; }
-    public Question? Question { get; set; }
 
-  
-    [ForeignKey(nameof(SelectedAnswerOption))]
+    [ForeignKey(nameof(QuestionId))]
+    public Question Question { get; set; } = null!;
+
+    [Required]
     public int SelectedAnswerOptionId { get; set; }
-    public AnswerOption? SelectedAnswerOption { get; set; }
 
+    [ForeignKey(nameof(SelectedAnswerOptionId))]
+    public AnswerOption SelectedAnswerOption { get; set; } = null!;
+
+    [Required]
     public bool IsCorrect { get; set; }
 
-    public DateTime AnsweredAtUtc { get; set; } = DateTime.UtcNow;
-
-    public int SubCategoryId { get; set; }
+    [Required]
+    public DateTimeOffset AnsweredAtUtc { get; set; } = DateTimeOffset.UtcNow;
 }

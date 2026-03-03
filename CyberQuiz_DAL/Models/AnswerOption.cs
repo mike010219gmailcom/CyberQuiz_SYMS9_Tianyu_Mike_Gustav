@@ -7,13 +7,16 @@ public class AnswerOption
 {
     public int Id { get; set; }
 
-    [Required, MaxLength(400)]
-    public required string Text { get; set; }
-
-    public bool IsCorrect { get; set; }
-
-    [ForeignKey(nameof(Question))]
+    [Required]
     public int QuestionId { get; set; }
-    public Question? Question { get; set; }
-    public int Order { get; set; }
+
+    [ForeignKey(nameof(QuestionId))]
+    public Question Question { get; set; } = null!;
+
+    [Required]
+    [MaxLength(250)]
+    public string Text { get; set; } = string.Empty;
+
+    [Required]
+    public bool IsCorrect { get; set; }
 }
