@@ -54,9 +54,17 @@ else
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+<<<<<<< Updated upstream
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+=======
+//app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+//app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseAuthentication();
+app.UseAuthorization();
+>>>>>>> Stashed changes
 app.UseAntiforgery();
 
 app.MapStaticAssets();
