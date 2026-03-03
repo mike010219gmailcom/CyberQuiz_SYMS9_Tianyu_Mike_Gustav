@@ -6,6 +6,7 @@ namespace CyberQuiz_BLL.DTOs
 {
     public class UserQuizHistoryDto
     {
+        public string UserId { get; set; }
         public List<QuizSummaryDto> UserQuizHistory { get; set; } = new();
 
     }
