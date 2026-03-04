@@ -21,8 +21,8 @@ namespace CyberQuiz_BLL.Services
         private readonly IQuizRepository _quizRepository;
         private readonly IUserResultRepository _userResultRepository;
         public QuizService(
-            QuizRepository quizRepository, 
-            UserResultRepository userResultRepository)
+            IQuizRepository quizRepository, 
+            IUserResultRepository userResultRepository)
         {
             _quizRepository = quizRepository;
             _userResultRepository = userResultRepository;
@@ -48,7 +48,7 @@ namespace CyberQuiz_BLL.Services
         }
 
         // submitQuiz
-        public async Task<QuizSummaryDto> SubmitQuizAysnc(string userId, SubmitQuizDto dto, CancellationToken ct = default)
+        public async Task<QuizSummaryDto> SubmitQuizAsync(string userId, SubmitQuizDto dto, CancellationToken ct = default)
         {
             // generate a new QuizAttemptId
             var quizAttemptId = Guid.NewGuid();
@@ -59,6 +59,8 @@ namespace CyberQuiz_BLL.Services
                 throw new Exception("Subcategory not found");
 
             int correctCount = 0;
+
+            var userResults = new List<UserResult>();
 
             foreach (var answer in dto.Answers)
             {
@@ -86,8 +88,11 @@ namespace CyberQuiz_BLL.Services
                     QuizAttemptId = quizAttemptId,
                 };
 
-                await _userResultRepository.AddResultAsync(userResult, ct);
+                userResults.Add(userResult);
             }
+
+            // Discuss with DAL add list instead
+            await _userResultRepository.AddResultAsync(userResults, ct);
 
             double percentage = subCategory.Questions.Count > 0
                 ? (double)correctCount / subCategory.Questions.Count * 100
@@ -96,17 +101,19 @@ namespace CyberQuiz_BLL.Services
             return new QuizSummaryDto
             {
                 QuizAttemptId = quizAttemptId,
+                SubCategoryId = subCategory.Id,
+                SubCategoryName = subCategory.Name,
                 TotalQuestions = subCategory.Questions.Count,
                 CorrectAnswers = correctCount,
                 ScorePercentage = percentage,
-                CompletedAtUtc = DateTime.UtcNow
+                CompletedAtUtc = DateTimeOffset.UtcNow
             };
         }
 
-        public async Task<QuizSummaryDto> GetQuizSummaryAsync(string userid, int subcategoryid)
+        public async Task<QuizSummaryDto> GetQuizSummaryAsync(string userid, Guid quizAttemptId, CancellationToken ct = default)
         {
             var results = await _userResultRepository
-                .GetResultsForUserAndSubCategoryAsync(userid, subcategoryid);
+                .GetResultsForUserAndSubCategoryAsync(userid, quizAttemptId, ct); // DAL
 
             if (!results.Any())
                 throw new Exception("No results found for this attempt");
@@ -120,6 +127,7 @@ namespace CyberQuiz_BLL.Services
             {
                 QuizAttemptId = quizAttempId,
                 SubCategoryId = results.First().SubCategoryId,
+                SubCategoryName = results.First().SubCategory.Name,
                 TotalQuestions = total,
                 CorrectAnswers = correct,
                 ScorePercentage = percentage,

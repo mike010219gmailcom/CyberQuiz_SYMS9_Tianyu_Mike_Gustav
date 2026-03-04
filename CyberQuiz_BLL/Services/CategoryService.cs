@@ -11,13 +11,13 @@ namespace CyberQuiz_BLL.Services
     public class CategoryService: ICategoryService
     {
         // Inject repository
-        private readonly CategoryRepository _categoryRepository;
-        private readonly QuizRepository _quizRepository;
-        private readonly UserResultRepository _userResultRepository;
+        private readonly ICategoryRepository _categoryRepository;
+        private readonly IQuizRepository _quizRepository;
+        private readonly IUserResultRepository _userResultRepository;
         public CategoryService(
-            CategoryRepository categoryRepository,
-            QuizRepository quizRepository,
-            UserResultRepository userResultRepository)
+            ICategoryRepository categoryRepository,
+            IQuizRepository quizRepository,
+            IUserResultRepository userResultRepository)
         {
             _categoryRepository = categoryRepository;
             _quizRepository = quizRepository;
