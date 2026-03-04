@@ -1,30 +1,40 @@
 ﻿using CyberQuiz.DAL.Data;
+using CyberQuiz.DAL.Repositories;
 using CyberQuiz_BLL.DTOs;
-using CyberQuiz_DAL.Data;
-using Microsoft.EntityFrameworkCore;
+using CyberQuiz_BLL.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace CyberQuiz_BLL.Services
 {
-    public class CategoryService
+    public class CategoryService: ICategoryService
     {
-        private readonly CyberQuizDbContext _context;
-        public CategoryService(CyberQuizDbContext context)
+        // Inject repository
+        private readonly CategoryRepository _categoryRepository;
+        public CategoryService(CategoryRepository categoryRepository)
         {
-            _context = context; 
+            _categoryRepository = categoryRepository;
+
         }
 
-        public async Task<List<CategoryDto>> GetAllCategoriesAsync()
+        public async Task<List<CategoryDto>> GetAllCategoriesAsync(
+            CancellationToken ct = default)
         {
-            return await _context.Categories
-                .Select(c => new CategoryDto
+            var categories = await _categoryRepository
+                .GetAllWithSubCategoriesAsync(ct);
+
+                return categories.Select(c => new CategoryDto
                 {
                     Id = c.Id,
-                    Name = c.Name
+                    Name = c.Name,
+                    SubCategories = c.SubCategories.Select(sc => new SubCategoryDto
+                    {
+                        Id = sc.Id,
+                        Name = sc.Name,
+                    }).ToList()
             })
-            .ToListAsync();
+            .ToList();
         }
     }
 }

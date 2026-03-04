@@ -8,6 +8,6 @@ namespace CyberQuiz_BLL.Interfaces
     public interface ICategoryService
     {
         // Get/Read
-        Task<List<CategoryDto>> GetAllCategoryAsync();
+        Task<List<CategoryDto>> GetAllCategoriesAsync(CancellationToken ct = default);
     }
 }
