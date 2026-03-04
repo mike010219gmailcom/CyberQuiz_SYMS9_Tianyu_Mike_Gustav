@@ -1,0 +1,300 @@
+@page "/quiz/{SubCategoryId:int}"
+@rendermode InteractiveServer
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>Quiz</PageTitle>
+
+<div class="container py-4">
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Laddar quiz...</span>
+            </div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">
+            <strong>Fel:</strong> @errorMessage
+            <div class="mt-3">
+                <button class="btn btn-secondary" @onclick="GoBack">Tillbaka till start</button>
+            </div>
+        </div>
+    }
+    else if (quizData != null && questions.Any())
+    {
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h4 class="mb-0">@quizData.SubCategory?.Name</h4>
+                        <small class="text-muted">Fråga @(currentQuestionIndex + 1) av @questions.Count</small>
+                    </div>
+                    <div class="card-body">
+                        @if (currentQuestionIndex < questions.Count)
+                        {
+                            var question = questions[currentQuestionIndex];
+
+                            <h5 class="mb-4">@question.Text</h5>
+
+                            @if (!string.IsNullOrEmpty(feedbackMessage))
+                            {
+                                <div class="alert @(isLastAnswerCorrect ? "alert-success" : "alert-danger") mb-4">
+                                    @feedbackMessage
+                                </div>
+                            }
+
+                            @if (!hasAnswered)
+                            {
+                                <div class="list-group mb-4">
+                                    @foreach (var option in question.AnswerOptions ?? Enumerable.Empty<AnswerOptionModel>())
+                                    {
+                                        <label class="list-group-item list-group-item-action" style="cursor: pointer;">
+                                            <input type="radio" name="answer" value="@option.Id" @onchange="() => SelectAnswer(option.Id)" class="form-check-input me-2" />
+                                            @option.Text
+                                        </label>
+                                    }
+                                </div>
+
+                                <button class="btn btn-primary" disabled="@(selectedAnswerId == null || isSubmitting)" @onclick="SubmitAnswer">
+                                    @if (isSubmitting)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                        <span>Skickar...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Svara</span>
+                                    }
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-secondary" @onclick="NextQuestion">
+                                    @if (currentQuestionIndex < questions.Count - 1)
+                                    {
+                                        <span>Nästa fråga →</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Se resultat →</span>
+                                    }
+                                </button>
+                            }
+                        }
+                    </div>
+                    <div class="card-footer">
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar" role="progressbar" style="width: @progressPercent%" aria-valuenow="@progressPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (showResults)
+    {
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center">
+                        <h3 class="mb-4">Quiz slutfört!</h3>
+                        <div class="display-4 mb-3">
+                            @correctCount / @totalQuestions
+                        </div>
+                        <p class="lead">@accuracyPercent% rätt</p>
+
+                        @if (accuracyPercent >= 80)
+                        {
+                            <div class="alert alert-success">
+                                <strong>Grattis!</strong> Du har låst upp nästa subkategori.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning">
+                                Du behöver minst 80% för att låsa upp nästa subkategori.
+                            </div>
+                        }
+
+                        <button class="btn btn-primary" @onclick="GoBack">Tillbaka till start</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int SubCategoryId { get; set; }
+
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private bool hasAnswered = false;
+    private bool showResults = false;
+    private string? errorMessage;
+    private string? feedbackMessage;
+    private bool isLastAnswerCorrect = false;
+
+    private QuizDataModel? quizData;
+    private List<QuestionModel> questions = new();
+    private int currentQuestionIndex = 0;
+    private int? selectedAnswerId;
+
+    private int correctCount = 0;
+    private int totalQuestions = 0;
+    private int accuracyPercent = 0;
+
+    private int progressPercent => totalQuestions > 0 ? (int)((currentQuestionIndex + 1) * 100.0 / totalQuestions) : 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadQuizAsync();
+    }
+
+    private async Task LoadQuizAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var resp = await Http.GetAsync($"/api/quiz/start/{SubCategoryId}");
+            if (resp.IsSuccessStatusCode)
+            {
+                quizData = await resp.Content.ReadFromJsonAsync<QuizDataModel>();
+                questions = quizData?.Questions ?? new List<QuestionModel>();
+                totalQuestions = questions.Count;
+            }
+            else if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                errorMessage = "Subkategorin hittades inte.";
+            }
+            else if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                errorMessage = "Du måste vara inloggad för att starta ett quiz.";
+            }
+            else
+            {
+                errorMessage = $"Kunde inte hämta quiz (status: {resp.StatusCode}).";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Kunde inte nå servern. ({ex.Message})";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void SelectAnswer(int answerId)
+    {
+        selectedAnswerId = answerId;
+    }
+
+    private async Task SubmitAnswer()
+    {
+        if (selectedAnswerId == null || currentQuestionIndex >= questions.Count)
+            return;
+
+        isSubmitting = true;
+        feedbackMessage = null;
+
+        try
+        {
+            var question = questions[currentQuestionIndex];
+            var request = new
+            {
+                SubCategoryId = SubCategoryId,
+                QuestionId = question.Id,
+                SelectedAnswerOptionId = selectedAnswerId.Value
+            };
+
+            var resp = await Http.PostAsJsonAsync("/api/quiz/answer", request);
+            if (resp.IsSuccessStatusCode)
+            {
+                var result = await resp.Content.ReadFromJsonAsync<SubmitAnswerResponse>();
+                isLastAnswerCorrect = result?.IsCorrect ?? false;
+
+                if (isLastAnswerCorrect)
+                {
+                    correctCount++;
+                    feedbackMessage = "Rätt svar!";
+                }
+                else
+                {
+                    feedbackMessage = "Fel svar.";
+                }
+
+                hasAnswered = true;
+            }
+            else
+            {
+                feedbackMessage = "Kunde inte skicka svaret. Försök igen.";
+            }
+        }
+        catch
+        {
+            feedbackMessage = "Nätverksfel vid svar.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void NextQuestion()
+    {
+        currentQuestionIndex++;
+        selectedAnswerId = null;
+        hasAnswered = false;
+        feedbackMessage = null;
+
+        if (currentQuestionIndex >= questions.Count)
+        {
+            accuracyPercent = totalQuestions > 0 ? (int)((correctCount * 100.0) / totalQuestions) : 0;
+            showResults = true;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/start");
+    }
+
+    private class QuizDataModel
+    {
+        public SubCategoryInfoModel? SubCategory { get; set; }
+        public List<QuestionModel>? Questions { get; set; }
+    }
+
+    private class SubCategoryInfoModel
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+    }
+
+    private class QuestionModel
+    {
+        public int Id { get; set; }
+        public string? Text { get; set; }
+        public List<AnswerOptionModel>? AnswerOptions { get; set; }
+    }
+
+    private class AnswerOptionModel
+    {
+        public int Id { get; set; }
+        public string? Text { get; set; }
+    }
+
+    private class SubmitAnswerResponse
+    {
+        public bool IsCorrect { get; set; }
+    }
+}
