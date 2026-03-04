@@ -18,15 +18,12 @@ namespace CyberQuiz_BLL.Services
     public class QuizService: IQuizService
     {
         // Inject repositories
-        private readonly ICategoryRepository _categoryRepository;
         private readonly IQuizRepository _quizRepository;
         private readonly IUserResultRepository _userResultRepository;
         public QuizService(
-            CategoryRepository categoryRepository,
             QuizRepository quizRepository, 
             UserResultRepository userResultRepository)
         {
-            _categoryRepository = categoryRepository;
             _quizRepository = quizRepository;
             _userResultRepository = userResultRepository;
             
@@ -53,6 +50,9 @@ namespace CyberQuiz_BLL.Services
         // submitQuiz
         public async Task<QuizSummaryDto> SubmitQuizAysnc(string userId, SubmitQuizDto dto, CancellationToken ct = default)
         {
+            // generate a new QuizAttemptId
+            var quizAttemptId = Guid.NewGuid();
+
             // load subcategory with questions
             var subCategory = await _quizRepository.GetSubCategoryWithQuestionsAsync(dto.SubCategoryId, ct);
             if (subCategory == null)
@@ -82,7 +82,8 @@ namespace CyberQuiz_BLL.Services
                     QuestionId = answer.QuestionId,
                     SelectedAnswerOptionId = answer.SelectedAnswerOptionId,
                     IsCorrect = isCorrect,
-                    AnsweredAtUtc = DateTime.UtcNow
+                    AnsweredAtUtc = DateTimeOffset.UtcNow,
+                    QuizAttemptId = quizAttemptId,
                 };
 
                 await _userResultRepository.AddResultAsync(userResult, ct);
@@ -94,6 +95,7 @@ namespace CyberQuiz_BLL.Services
 
             return new QuizSummaryDto
             {
+                QuizAttemptId = quizAttemptId,
                 TotalQuestions = subCategory.Questions.Count,
                 CorrectAnswers = correctCount,
                 ScorePercentage = percentage,
@@ -106,6 +108,9 @@ namespace CyberQuiz_BLL.Services
             var results = await _userResultRepository
                 .GetResultsForUserAndSubCategoryAsync(userid, subcategoryid);
 
+            if (!results.Any())
+                throw new Exception("No results found for this attempt");
+
             int total = results.Count;
             int correct = results.Count(r => r.IsCorrect);
 
@@ -113,9 +118,12 @@ namespace CyberQuiz_BLL.Services
 
             return new QuizSummaryDto
             {
+                QuizAttemptId = quizAttempId,
+                SubCategoryId = results.First().SubCategoryId,
                 TotalQuestions = total,
                 CorrectAnswers = correct,
-                ScorePercentage = percentage
+                ScorePercentage = percentage,
+                CompletedAtUtc = results.Max(r => r.AnsweredAtUtc)
             };
         }
 
