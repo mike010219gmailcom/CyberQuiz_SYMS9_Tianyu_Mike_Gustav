@@ -1,9 +1,7 @@
-﻿using CyberQuiz.DAL.Data;
-using CyberQuiz.DAL.Models;
+﻿using CyberQuiz.DAL.Models;
 using CyberQuiz.DAL.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace CyberQuiz_API.Controllers
@@ -16,20 +14,14 @@ namespace CyberQuiz_API.Controllers
     {
         private readonly IQuizRepository _quizRepo;
         private readonly IUserResultRepository _resultRepo;
-        private readonly CyberQuizDbContext _db;
 
-        public QuizController(
-            IQuizRepository quizRepo,
-            IUserResultRepository resultRepo,
-            CyberQuizDbContext db)
+        public QuizController(IQuizRepository quizRepo, IUserResultRepository resultRepo)
         {
             _quizRepo = quizRepo;
             _resultRepo = resultRepo;
-            _db = db;
         }
 
-        // GET: api/quiz/start/5
-        // Returnerar frågor + svarsalternativ (utan IsCorrect)
+
         [HttpGet("start/{subCategoryId:int}")]
         public async Task<IActionResult> Start(int subCategoryId, CancellationToken ct)
         {
@@ -41,7 +33,7 @@ namespace CyberQuiz_API.Controllers
             if (sub is null)
                 return NotFound(new { message = "SubCategory not found" });
 
-            // Skicka aldrig IsCorrect till UI
+            // Mapping i controller
             var response = new
             {
                 subCategory = new { id = sub.Id, name = sub.Name },
@@ -68,7 +60,6 @@ namespace CyberQuiz_API.Controllers
         }
 
         // POST: api/quiz/answer
-        // Sparar resultat i DB och returnerar feedback + progression
         [HttpPost("answer")]
         public async Task<IActionResult> SubmitAnswer([FromBody] SubmitAnswerRequest req, CancellationToken ct)
         {
@@ -108,34 +99,14 @@ namespace CyberQuiz_API.Controllers
 
             await _resultRepo.AddResultAsync(result, ct);
 
-            
+
             var accuracy = await _resultRepo.GetAccuracyForUserInSubCategoryAsync(userId, req.SubCategoryId, ct);
-
-            // Hitta nästa subkategori inom samma kategori baserat på Order
-            var currentSub = await _db.SubCategories.AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Id == req.SubCategoryId, ct);
-
-            int? nextSubCategoryId = null;
-            var unlockedNext = false;
-
-            if (currentSub is not null)
-            {
-                nextSubCategoryId = await _db.SubCategories.AsNoTracking()
-                    .Where(s => s.CategoryId == currentSub.CategoryId && s.Order > currentSub.Order)
-                    .OrderBy(s => s.Order)
-                    .Select(s => (int?)s.Id)
-                    .FirstOrDefaultAsync(ct);
-
-                unlockedNext = accuracy >= 0.8 && nextSubCategoryId is not null;
-            }
 
             return Ok(new
             {
                 isCorrect,
                 accuracy,
-                accuracyPercent = (int)Math.Round(accuracy * 100),
-                unlockedNext,
-                nextSubCategoryId
+                accuracyPercent = (int)Math.Round(accuracy * 100)
             });
         }
     }
