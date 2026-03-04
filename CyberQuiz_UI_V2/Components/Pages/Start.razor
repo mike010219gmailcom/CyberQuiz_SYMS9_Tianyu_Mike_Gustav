@@ -1,0 +1,180 @@
+@page "/start"
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider? AuthProvider
+
+<PageTitle>Start</PageTitle>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">Start</h2>
+            <small class="text-muted">Översikt över kategorier och progression</small>
+        </div>
+        <div class="text-end">
+            @if (!string.IsNullOrEmpty(userName))
+            {
+                <div class="fw-semibold">@userName</div>
+            }
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Laddar...</span>
+            </div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-warning">
+            <strong>Info:</strong> @errorMessage
+        </div>
+    }
+    else
+    {
+        @if (categories?.Any() != true)
+        {
+            <div class="alert alert-info">Inga kategorier att visa. Backend-endpoint saknas eller returnerar tomt resultat.</div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var cat in categories)
+                {
+                    <div class="col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="card-title mb-0">@cat.Name</h5>
+                                    <small class="text-muted">@(cat.SubCategories?.Count ?? 0) subkategorier</small>
+                                </div>
+
+                                @if (cat.SubCategories?.Any() == true)
+                                {
+                                    <ul class="list-group list-group-flush">
+                                        @foreach (var sc in cat.SubCategories)
+                                        {
+                                            <li class="list-group-item d-flex justify-content-between align-items-center @(sc.IsLocked ? "bg-light" : "")">
+                                                <div>
+                                                    @if (sc.IsLocked)
+                                                    {
+                                                        <span class="badge bg-secondary me-2">🔒</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-success me-2">🔓</span>
+                                                    }
+                                                    <strong class="@(sc.IsLocked ? "text-muted" : "")">@sc.Name</strong>
+                                                    <div class="small text-muted">@sc.QuestionCount frågor</div>
+                                                </div>
+                                                <div class="text-end d-flex align-items-center gap-2">
+                                                    <span class="badge bg-info text-dark">@sc.ProgressPercent% rätt</span>
+                                                    <button class="btn btn-sm btn-primary" disabled="@sc.IsLocked" @onclick="() => StartQuiz(sc.Id)">
+                                                        Starta quiz
+                                                    </button>
+                                                </div>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <p class="text-muted mb-0">Inga subkategorier tillgängliga.</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+    private List<CategoryModel>? categories;
+    private string? userName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TrySetUserNameAsync();
+        await LoadCategoriesAsync();
+    }
+
+    private async Task TrySetUserNameAsync()
+    {
+        if (AuthProvider is null)
+            return;
+
+        try
+        {
+            var state = await AuthProvider.GetAuthenticationStateAsync();
+            var name = state.User.Identity?.Name;
+            if (!string.IsNullOrEmpty(name))
+                userName = name;
+        }
+        catch
+        {
+			// ignore - auth inte konfigurerad eller något gick fel, visa ingen username
+        }
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var resp = await Http.GetAsync("/api/categories?includeProgress=true");
+            if (resp.IsSuccessStatusCode)
+            {
+                var data = await resp.Content.ReadFromJsonAsync<List<CategoryModel>>();
+                categories = data ?? new List<CategoryModel>();
+            }
+            else if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                errorMessage = "API-endpoint /api/categories saknas";
+            }
+            else
+            {
+                errorMessage = $"Kunde inte hämta kategorier från servern (status: {resp.StatusCode}).";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Kunde inte nå servern. Kontrollera att API körs. ({ex.Message})";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void StartQuiz(Guid subCategoryId)
+    {
+		// gå till quiz-sidan för vald subkategori
+        Navigation.NavigateTo($"/quiz/{subCategoryId}");
+    }
+
+    private class CategoryModel
+    {
+        public Guid Id { get; set; }
+        public string? Name { get; set; }
+        public List<SubCategoryModel>? SubCategories { get; set; }
+    }
+
+    private class SubCategoryModel
+    {
+        public Guid Id { get; set; }
+        public string? Name { get; set; }
+        public int QuestionCount { get; set; }
+        public bool IsLocked { get; set; }
+        public int ProgressPercent { get; set; }
+    }
+}

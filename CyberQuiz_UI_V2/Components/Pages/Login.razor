@@ -1,4 +1,5 @@
 @page "/login"
+@rendermode InteractiveServer
 @using System.ComponentModel.DataAnnotations
 @using System.Net.Http.Json
 @inject HttpClient Http
@@ -62,8 +63,8 @@
             var response = await Http.PostAsJsonAsync("/api/auth/login", loginModel);
             if (response.IsSuccessStatusCode)
             {
-                // After login, navigate to profile (empty for now)
-                Navigation.NavigateTo("/profile");
+                
+                Navigation.NavigateTo("/start");
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
@@ -82,7 +83,7 @@
 
     private void GoToRegister()
     {
-        Navigation.NavigateTo("/Identity/Account/Register");
+        Navigation.NavigateTo("/register");
     }
 
     private class LoginModel
