@@ -72,7 +72,6 @@
                                                     <div class="small text-muted">@sc.QuestionCount frågor</div>
                                                 </div>
                                                 <div class="text-end d-flex align-items-center gap-2">
-                                                    <span class="badge bg-info text-dark">@sc.ProgressPercent% rätt</span>
                                                     <button class="btn btn-sm btn-primary" disabled="@sc.IsLocked" @onclick="() => StartQuiz(sc.Id)">
                                                         Starta quiz
                                                     </button>
@@ -131,7 +130,7 @@
 
         try
         {
-            var resp = await Http.GetAsync("/api/categories?includeProgress=true");
+            var resp = await Http.GetAsync("/api/categories");
             if (resp.IsSuccessStatusCode)
             {
                 var data = await resp.Content.ReadFromJsonAsync<List<CategoryModel>>();
@@ -140,6 +139,10 @@
             else if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
                 errorMessage = "API-endpoint /api/categories saknas";
+            }
+            else if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                errorMessage = "Du måste vara inloggad för att se kategorier.";
             }
             else
             {
@@ -156,25 +159,25 @@
         }
     }
 
-    private void StartQuiz(Guid subCategoryId)
-    {
+	private void StartQuiz(int subCategoryId)
+	{
 		// gå till quiz-sidan för vald subkategori
-        Navigation.NavigateTo($"/quiz/{subCategoryId}");
-    }
+		Navigation.NavigateTo($"/quiz/{subCategoryId}");
+	}
 
-    private class CategoryModel
-    {
-        public Guid Id { get; set; }
-        public string? Name { get; set; }
-        public List<SubCategoryModel>? SubCategories { get; set; }
-    }
+	private class CategoryModel
+	{
+		public int Id { get; set; }
+		public string? Name { get; set; }
+		public List<SubCategoryModel>? SubCategories { get; set; }
+	}
 
-    private class SubCategoryModel
-    {
-        public Guid Id { get; set; }
-        public string? Name { get; set; }
-        public int QuestionCount { get; set; }
-        public bool IsLocked { get; set; }
-        public int ProgressPercent { get; set; }
-    }
+	private class SubCategoryModel
+	{
+		public int Id { get; set; }
+		public string? Name { get; set; }
+		public int Order { get; set; }
+		public int QuestionCount { get; set; }
+		public bool IsLocked { get; set; }
+	}
 }
