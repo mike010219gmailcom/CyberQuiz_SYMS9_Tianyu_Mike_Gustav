@@ -21,19 +21,28 @@ namespace CyberQuiz_BLL.Services
 
         }
 
-        // get user quiz history
-        public async Task<UserQuizHistoryDto> GetUserQuizHistoryAsync(string userId, int subCategoryId, CancellationToken ct = default)
+        // get user quiz history for a user + subCategory
+        public async Task<UserQuizHistoryDto> GetQuizHistoryForSubCategoryAsync(string userId, int subCategoryId, CancellationToken ct = default)
         {
             // load all user results
             var results = await _userResultRepository
                .GetResultsForUserAndSubCategoryAsync(userId, subCategoryId, ct);
+            
+            if (!results.Any())
+            {
+                return new UserQuizHistoryDto
+                {
+                    UserId = userId,
+                    UserQuizHistory = new List<QuizSummaryDto>()
+                };
+            }
 
-            // load all subCategories
+            // load all subCategory names
             var allSubCategories = await _categoryRepository.GetAllWithSubCategoriesAsync(ct);
 
             // group by subCategoryId
             var history = results
-                .GroupBy(r => r.SubCategoryId)
+                .GroupBy(r => r.QuizAttemptId)
                 .Select(g =>
                 {
                     var subCategory = allSubCategories.FirstOrDefault(sc => sc.Id == g.Key);
@@ -45,15 +54,17 @@ namespace CyberQuiz_BLL.Services
 
                     return new QuizSummaryDto
                     {
-                        SubCategoryId = g.Key,
+                        QuizAttemptId = g.Key,
+                        SubCategoryId = subCategoryId,
                         SubCategoryName = subCategory?.Name ?? "Unknown", // get sc name
                         TotalQuestions = totalQuestions,
                         CorrectAnswers = correctAnswers,
                         ScorePercentage = scorePercentage,
                         CompletedAtUtc = g.Max(r => r.AnsweredAtUtc)
                     };
-                }).ToList();
-
+                })
+                .OrderByDescending(a => a.CompletedAtUtc)
+                .ToList();
 
 
             return new UserQuizHistoryDto

@@ -7,6 +7,6 @@ namespace CyberQuiz_BLL.Interfaces
 {
     public interface IUserProgressService
     {
-        Task<UserQuizHistoryDto> GetUserQuizHistoryAsync(string userId, int subCategoryId, CancellationToken ct = default);
+        Task<UserQuizHistoryDto> GetQuizHistoryForSubCategoryAsync(string userId, int subCategoryId, CancellationToken ct = default);
     }
 }
