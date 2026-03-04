@@ -10,7 +10,8 @@ namespace CyberQuiz_BLL.DTOs
         public int CorrectAnswers { get; set; }
         public double ScorePercentage { get; set; }
         public string CategoryName { get; set;}
-        public string SubCategoryName { get; set; }
+        public int SubCategoryId {  get; set; }
+        public string SubCategoryName { get; set; } = "";
 
         public DateTimeOffset CompletedAtUtc { get; set; }
     }

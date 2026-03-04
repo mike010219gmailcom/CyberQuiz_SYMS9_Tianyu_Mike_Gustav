@@ -1,0 +1,98 @@
+@page "/login"
+@using System.ComponentModel.DataAnnotations
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>Logga in</PageTitle>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="card-title mb-3">Logga in</h3>
+
+                    <EditForm Model="loginModel" OnValidSubmit="HandleValidSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="mb-3 text-start">
+                            <label class="form-label">Användarnamn</label>
+                            <InputText class="form-control" @bind-Value="loginModel.Username" />
+                            <ValidationMessage For="() => loginModel.Username" />
+                        </div>
+
+                        <div class="mb-3 text-start">
+                            <label class="form-label">Lösenord</label>
+                            <InputText class="form-control" type="password" @bind-Value="loginModel.Password" />
+                            <ValidationMessage For="() => loginModel.Password" />
+                        </div>
+
+                        <div class="mb-3 form-check text-start">
+                            <InputCheckbox class="form-check-input" @bind-Value="loginModel.RememberMe" />
+                            <label class="form-check-label">Kom ihåg mig</label>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger" role="alert">@errorMessage</div>
+                        }
+
+                        <button type="submit" class="btn btn-primary">Logga in</button>
+                        <button type="button" class="btn btn-link" @onclick="GoToRegister">Registrera</button>
+                    </EditForm>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginModel = new();
+    private string? errorMessage;
+
+    private async Task HandleValidSubmit()
+    {
+        errorMessage = null;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("/api/auth/login", loginModel);
+            if (response.IsSuccessStatusCode)
+            {
+                // After login, navigate to profile (empty for now)
+                Navigation.NavigateTo("/profile");
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                errorMessage = "Fel användarnamn eller lösenord.";
+            }
+            else
+            {
+                errorMessage = "Serverfel vid inloggning.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Kunde inte nå servern.";
+        }
+    }
+
+    private void GoToRegister()
+    {
+        Navigation.NavigateTo("/Identity/Account/Register");
+    }
+
+    private class LoginModel
+    {
+        [Required(ErrorMessage = "Användarnamn krävs")]
+        public string? Username { get; set; }
+
+        [Required(ErrorMessage = "Lösenord krävs")]
+        public string? Password { get; set; }
+
+        public bool RememberMe { get; set; }
+    }
+}
