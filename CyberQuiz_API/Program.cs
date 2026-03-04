@@ -36,10 +36,21 @@ using (var scope = app.Services.CreateScope())
     await DatabaseSeeder.SeedAsync(db, userManager);
 }
 
-if (app.Environment.IsDevelopment())
+// Swagger configurable via appsettings
+var swaggerConfig = builder.Configuration.GetSection("Swagger");
+var swaggerEnabled = swaggerConfig.GetValue<bool>("Enabled");
+var swaggerRoutePrefix = swaggerConfig.GetValue<string>("RoutePrefix") ?? "swagger";
+var swaggerEndpoint = swaggerConfig.GetValue<string>("EndpointUrl") ?? "/swagger/v1/swagger.json";
+var swaggerName = swaggerConfig.GetValue<string>("Name") ?? "API";
+
+if (swaggerEnabled)
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.RoutePrefix = swaggerRoutePrefix;
+        c.SwaggerEndpoint(swaggerEndpoint, swaggerName);
+    });
 }
 
 app.UseHttpsRedirection();
