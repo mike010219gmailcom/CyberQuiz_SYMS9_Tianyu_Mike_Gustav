@@ -6,11 +6,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Register HttpClient so components can inject HttpClient for API calls
-builder.Services.AddHttpClient();
-builder.Services.AddScoped(sp => sp.GetRequiredService<System.Net.Http.IHttpClientFactory>().CreateClient());
-// HttpClient for calling API endpoints from the UI (will be used by Login/Register)
-builder.Services.AddHttpClient();
+// HttpClient for calling API endpoints - configured with API base URL
+var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7148";
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 
 var app = builder.Build();
 
