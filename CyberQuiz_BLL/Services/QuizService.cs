@@ -1,73 +1,80 @@
 ﻿using CyberQuiz.DAL.Data;
 using CyberQuiz.DAL.Models;
+using CyberQuiz.DAL.Repositories;
 using CyberQuiz_BLL.DTOs;
+using CyberQuiz_BLL.Interfaces;
+using CyberQuiz_BLL.Mappers;
 using CyberQuiz_Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Update;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
 namespace CyberQuiz_BLL.Services
 {
-    public class QuizService
+    public class QuizService: IQuizService
     {
-        private readonly CyberQuizDbContext _context;
-        public QuizService(CyberQuizDbContext context)
+        // Inject repositories
+        private readonly ICategoryRepository _categoryRepository;
+        private readonly IQuizRepository _quizRepository;
+        private readonly IUserResultRepository _userResultRepository;
+        public QuizService(
+            CategoryRepository categoryRepository,
+            QuizRepository quizRepository, 
+            UserResultRepository userResultRepository)
         {
-            _context = context;
+            _categoryRepository = categoryRepository;
+            _quizRepository = quizRepository;
+            _userResultRepository = userResultRepository;
+            
         }
 
         // get question list
-        public async Task<List<QuestionDto>> GetQuestionsAsync(int subCategoryId)
+        public async Task<List<QuestionDto>> GetQuestionsAsync(int subCategoryId, string userId, CancellationToken ct = default)
         {
+            var subCategory = await _quizRepository
+                .GetSubCategoryWithQuestionsAsync(subCategoryId, ct);
+
+            if(subCategory == null)
+                throw new Exception("SubCategory not found");
+
+            if (!subCategory.Questions.Any())
+                throw new Exception("No questions available");
+
             // load questions
-            var questions = await _context.Questions
-                .Where(q => q.SubCategoryId == subCategoryId)
-                .Include(q => q.AnswerOptions) // load navigation property
-                .AsNoTracking()
-                .ToListAsync();
-
-            // convert to List<QuestionDto> in memory
-            var result = questions.Select(q => new QuestionDto
-            {
-                Id = q.Id,
-                Text = q.Text,
-                Options = q.AnswerOptions
-                    .Select(ao => new AnswerOptionDto
-                    {
-                        Id = ao.Id,
-                        Text = ao.Text,
-                    })
-                    .ToList()
-                })
+            return subCategory.Questions
+                .Select(q => EntityToDtoMapper.MapQuestion(q))
                 .ToList();
-
-            return result;
         }
 
         // submitQuiz
-        public async Task<QuizSummaryDto> SubmitQuizAsync(string userId, SubmitQuizDto dto)
+        public async Task<QuizSummaryDto> SubmitQuizAysnc(string userId, SubmitQuizDto dto, CancellationToken ct = default)
         {
-            var questions = await _context.Questions
-                .Where(q => q.SubCategoryId == dto.SubCategoryId)
-                .Include(q => q.AnswerOptions)
-                .ToListAsync();
+            // load subcategory with questions
+            var subCategory = await _quizRepository.GetSubCategoryWithQuestionsAsync(dto.SubCategoryId, ct);
+            if (subCategory == null)
+                throw new Exception("Subcategory not found");
 
             int correctCount = 0;
 
             foreach (var answer in dto.Answers)
             {
-                var question = questions.First(q => q.Id == answer.QuestionId);
+                var question = subCategory.Questions.FirstOrDefault(q => q.Id == answer.QuestionId);
+                if (question == null) continue;
 
                 var correctOption = question.AnswerOptions
-                    .First(a => a.IsCorrect);
+                    .FirstOrDefault(a => a.IsCorrect);
+                if(correctOption == null) continue;
 
-                bool isCorrect = correctOption.Id == answer.SelectedAnswerOptionId;
+                bool isCorrect = correctOption.Id == answer.SelectedAnswerOptionId; // match dto property
 
                 if (isCorrect)
                     correctCount++;
 
+                // save result via repository
                 var userResult = new UserResult
                 {
                     UserId = userId,
@@ -78,44 +85,39 @@ namespace CyberQuiz_BLL.Services
                     AnsweredAtUtc = DateTime.UtcNow
                 };
 
-                _context.UserResults.Add(userResult);
+                await _userResultRepository.AddResultAsync(userResult, ct);
             }
 
-            await _context.SaveChangesAsync();
-
-            double percentage = (double)correctCount / questions.Count * 100;
+            double percentage = subCategory.Questions.Count > 0
+                ? (double)correctCount / subCategory.Questions.Count * 100
+                : 0;
 
             return new QuizSummaryDto
             {
-                TotalQuestions = questions.Count,
+                TotalQuestions = subCategory.Questions.Count,
                 CorrectAnswers = correctCount,
                 ScorePercentage = percentage,
                 CompletedAtUtc = DateTime.UtcNow
             };
         }
 
-        // get user quiz history
-        public async Task<UserQuizHistoryDto> GetUserQuizHistroryAsync(string userId)
+        public async Task<QuizSummaryDto> GetQuizSummaryAsync(string userid, int subcategoryid)
         {
-            var grouped = await _context.UserResults
-                .Where(r => r.UserId == userId)
-                .Include(r => r.SubCategory) // include navigation property
-                .GroupBy(r => new { r.SubCategoryId, r.AnsweredAtUtc })
-                .Select(g => new QuizSummaryDto
-                {
-                    SubCategoryName = g.First().SubCategory.Name,
-                    TotalQuestions = g.Count(),
-                    CorrectAnswers = g.Count(x => x.IsCorrect),
-                    ScorePercentage = g.Count() == 0? 0 : (double)g.Count(x => x.IsCorrect) / g.Count() * 100,
-                    CompletedAtUtc = g.Key.AnsweredAtUtc
-                })
-                .ToListAsync();
+            var results = await _userResultRepository
+                .GetResultsForUserAndSubCategoryAsync(userid, subcategoryid);
 
-            return new UserQuizHistoryDto
+            int total = results.Count;
+            int correct = results.Count(r => r.IsCorrect);
+
+            double percentage = total == 0 ? 0 : (double)correct / total * 100;
+
+            return new QuizSummaryDto
             {
-                UserId = userId,
-                UserQuizHistory = grouped
+                TotalQuestions = total,
+                CorrectAnswers = correct,
+                ScorePercentage = percentage
             };
         }
+
     }
 }
