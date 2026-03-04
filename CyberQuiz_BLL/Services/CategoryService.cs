@@ -28,43 +28,50 @@ namespace CyberQuiz_BLL.Services
             string userId,
             CancellationToken ct = default)
         {
-            var categories = await _categoryRepository
-                .GetAllWithSubCategoriesAsync(ct);
+            var categories = await _categoryRepository.GetAllWithSubCategoriesAsync(ct);
+
+            var categoryDtos = new List<CategoryDto>();
 
             foreach (var cat in categories)
             {
+                // Order subcategories
                 var subs = cat.SubCategories.OrderBy(s => s.Order).ToList();
+                var subDtos = new List<SubCategoryDto>();
 
-                for (int i = 0; i < cat.SubCategories.Count; i++)
+                for (int i = 0; i < subs.Count; i++)
                 {
-                    var sc = subs[i];
-                    var questionCount = await _quizRepository.GetQuestionCountForSubCategoryAsync(sc.Id, ct);
+                    var scEntity = subs[i];
+
+                    var scDto = new SubCategoryDto
+                    {
+                        Id = scEntity.Id,
+                        Name = scEntity.Name,
+                        Order = scEntity.Order,
+                        QuestionCount = await _quizRepository.GetQuestionCountForSubCategoryAsync(scEntity.Id, ct)
+                    };
 
                     if (i == 0)
-                        sc.IsLocked = false; // first subcategory unlocked
+                        scDto.IsLocked = false; // first subcategory unlocked
                     else
                     {
-                        var prev = subs[i - 1];
                         var prevAccuracy = await _userResultRepository
-                            .GetAccuracyForUserInSubCategoryAsync(userId, prev.Id, ct);
+                            .GetAccuracyForUserInSubCategoryAsync(userId, subs[i - 1].Id, ct);
 
-                        sc.IsLocked = prevAccuracy < 0.8;
+                        scDto.IsLocked = prevAccuracy < 0.8;
                     }
+
+                    subDtos.Add(scDto);
                 }
-                return categories.Select(c => new CategoryDto
+
+                categoryDtos.Add(new CategoryDto
                 {
-                    Id = c.Id,
-                    Name = c.Name,
-                    SubCategories = c.SubCategories.Select(sc => new SubCategoryDto
-                    {
-                        Id = sc.Id,
-                        Name = sc.Name,
-                        Order = sc.Order,
-                        QuestionCount = sc.Questions.Count,
-                        IsLocked = sc.IsLocked
-                    }).ToList()
-            })
-            .ToList();
+                    Id = cat.Id,
+                    Name = cat.Name,
+                    SubCategories = subDtos
+                });
+            }
+
+            return categoryDtos;
         }
     }
 }
