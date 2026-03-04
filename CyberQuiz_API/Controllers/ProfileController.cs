@@ -1,8 +1,6 @@
-﻿using CyberQuiz.DAL.Data;
-using CyberQuiz.DAL.Repositories;
+﻿using CyberQuiz.DAL.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace CyberQuiz_API.Controllers
@@ -13,17 +11,15 @@ namespace CyberQuiz_API.Controllers
     [Authorize]
     public class ProfileController : Controller
     {
-        private readonly CyberQuizDbContext _db;
         private readonly IUserResultRepository _resultRepo;
+        private readonly ICategoryRepository _categoryRepo;
 
-        public ProfileController(CyberQuizDbContext db, IUserResultRepository resultRepo)
+        public ProfileController(IUserResultRepository resultRepo, ICategoryRepository categoryRepo)
         {
-            _db = db;
             _resultRepo = resultRepo;
+            _categoryRepo = categoryRepo;
         }
 
-        // GET: api/profile
-        // Översikt: accuracy per subkategori + totals
         [HttpGet]
         public async Task<IActionResult> Get(CancellationToken ct)
         {
@@ -31,14 +27,18 @@ namespace CyberQuiz_API.Controllers
             if (string.IsNullOrWhiteSpace(userId))
                 return Unauthorized(new { message = "Not logged in" });
 
-            var subCategories = await _db.SubCategories
-                .AsNoTracking()
-                .OrderBy(s => s.CategoryId).ThenBy(s => s.Order)
-                .Select(s => new { s.Id, s.Name })
-                .ToListAsync(ct);
+            // Hämta alla subkategorier via DAL (utan DbContext i controller)
+            var categories = await _categoryRepo.GetAllWithSubCategoriesAsync(ct);
+            var allSubCategories = categories
+                .SelectMany(c => c.SubCategories)
+                .OrderBy(sc => sc.CategoryId)
+                .ThenBy(sc => sc.Order)
+                .Select(sc => new { sc.Id, sc.Name })
+                .ToList();
 
+            // Accuracy per subkategori (DAL räknar)
             var perSubCategory = new List<object>();
-            foreach (var sc in subCategories)
+            foreach (var sc in allSubCategories)
             {
                 var acc = await _resultRepo.GetAccuracyForUserInSubCategoryAsync(userId, sc.Id, ct);
                 perSubCategory.Add(new
@@ -50,11 +50,18 @@ namespace CyberQuiz_API.Controllers
                 });
             }
 
-            var totalAnswers = await _db.UserResults.AsNoTracking()
-                .CountAsync(r => r.UserId == userId, ct);
+            // Totals (utan _db): räkna totals via userresults repo-lista
+            // (Vi använder GetResultsForUserAndSubCategoryAsync per subkategori och summerar)
+            // Enklast utan nya repo-metoder:
+            var totalAnswers = 0;
+            var totalCorrect = 0;
 
-            var totalCorrect = await _db.UserResults.AsNoTracking()
-                .CountAsync(r => r.UserId == userId && r.IsCorrect, ct);
+            foreach (var sc in allSubCategories)
+            {
+                var results = await _resultRepo.GetResultsForUserAndSubCategoryAsync(userId, sc.Id, ct);
+                totalAnswers += results.Count;
+                totalCorrect += results.Count(r => r.IsCorrect);
+            }
 
             var totalAccuracy = totalAnswers == 0 ? 0 : (double)totalCorrect / totalAnswers;
 
