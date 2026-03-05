@@ -15,7 +15,9 @@
         <div class="text-end">
             @if (!string.IsNullOrEmpty(userName))
             {
-                <div class="fw-semibold">@userName</div>
+                <a href="/profile" class="text-decoration-none">
+                    <div class="fw-semibold text-primary" style="cursor: pointer;">👤 @userName</div>
+                </a>
             }
         </div>
     </div>
