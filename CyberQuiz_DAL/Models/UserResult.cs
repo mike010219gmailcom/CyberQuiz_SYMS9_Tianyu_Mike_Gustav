@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
+
 namespace CyberQuiz.DAL.Models;
 
 public class UserResult
@@ -34,4 +35,5 @@ public class UserResult
 
     [Required]
     public DateTimeOffset AnsweredAtUtc { get; set; } = DateTimeOffset.UtcNow;
+    public Guid QuizAttemptId { get; set; }
 }

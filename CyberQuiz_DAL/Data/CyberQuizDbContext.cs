@@ -19,6 +19,8 @@ public class CyberQuizDbContext : IdentityDbContext<IdentityUser>
     public DbSet<AnswerOption> AnswerOptions => Set<AnswerOption>();
     public DbSet<UserResult> UserResults => Set<UserResult>();
 
+ 
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

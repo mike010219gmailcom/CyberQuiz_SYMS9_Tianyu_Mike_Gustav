@@ -42,6 +42,11 @@ namespace CyberQuiz_BLL.Services
                 .GroupBy(r => r.QuizAttemptId)
                 .Select(g =>
                 {
+                    var subCategory = allSubCategories.FirstOrDefault(sc =>
+                    {
+                        bool v = sc.Id == g.Key;
+                        return v;
+                    });
                     int totalQuestions = g.Count();
                     int correctAnswers = g.Count(r => r.IsCorrect);
                     double scorePercentage = totalQuestions > 0
