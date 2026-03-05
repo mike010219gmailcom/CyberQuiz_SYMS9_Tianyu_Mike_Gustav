@@ -115,7 +115,7 @@ namespace CyberQuiz_BLL.Services
         public async Task<QuizSummaryDto> GetQuizSummaryAsync(string userid, Guid quizAttemptId, CancellationToken ct = default)
         {
             var results = await _userResultRepository
-                .GetResultsForUserAndSubCategoryAsync(userid, quizAttemptId, ct); // DAL
+                .GetResultsByQuizAttemptIdAsync(quizAttemptId, ct); // DAL
 
             if (!results.Any())
                 throw new Exception("No results found for this attempt");
