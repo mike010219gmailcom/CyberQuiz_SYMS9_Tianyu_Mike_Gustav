@@ -8,11 +8,13 @@ public class UserResultRepository : IUserResultRepository
 {
     private readonly CyberQuizDbContext _db;
 
+    private readonly object _context;
+
     public UserResultRepository(CyberQuizDbContext db) => _db = db;
 
-    public async Task AddResultAsync(UserResult result, CancellationToken ct = default)
+    public async Task AddResultAsync(List<UserResult> result, CancellationToken ct = default)
     {
-        _db.UserResults.Add(result);
+       await  _db.UserResults.AddRangeAsync(result, ct);
         await _db.SaveChangesAsync(ct);
     }
 
@@ -40,4 +42,14 @@ public class UserResultRepository : IUserResultRepository
         var correct = await query.CountAsync(r => r.IsCorrect, ct);
         return (double)correct / total;
     }
+    public async Task<List<UserResult>> GetResultsByQuizAttemptIdAsync(Guid quizAttemptId,CancellationToken ct = default)
+    {
+
+        return await _db.UserResults
+            .Include(r => r.SubCategory)
+            .Where(r => r.QuizAttemptId == quizAttemptId)
+            .ToListAsync(ct);
+    }
+
+
 }

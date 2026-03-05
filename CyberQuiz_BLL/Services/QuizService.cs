@@ -20,6 +20,8 @@ namespace CyberQuiz_BLL.Services
         // Inject repositories
         private readonly IQuizRepository _quizRepository;
         private readonly IUserResultRepository _userResultRepository;
+        private Guid quizAttempId;
+
         public QuizService(
             QuizRepository quizRepository, 
             UserResultRepository userResultRepository)

@@ -4,7 +4,7 @@ namespace CyberQuiz.DAL.Repositories;
 
 public interface IUserResultRepository
 {
-    Task AddResultAsync(UserResult result, CancellationToken ct = default);
+    Task AddResultAsync(List<UserResult> result, CancellationToken ct = default);
 
     Task<List<UserResult>> GetResultsForUserAndSubCategoryAsync(
         string userId,
@@ -15,4 +15,10 @@ public interface IUserResultRepository
         string userId,
         int subCategoryId,
         CancellationToken ct = default);
+
+    Task<List<UserResult>> GetResultsByQuizAttemptIdAsync(
+        Guid quizAttemptId,
+        CancellationToken ct = default);
+
+
 }
