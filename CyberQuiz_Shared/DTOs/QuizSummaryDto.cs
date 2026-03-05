@@ -15,5 +15,7 @@ namespace CyberQuiz_BLL.DTOs
         public string SubCategoryName { get; set; } = "";
 
         public DateTimeOffset CompletedAtUtc { get; set; }
+
+        public bool Passed => ScorePercentage >= 80;
     }
 }
