@@ -105,7 +105,11 @@
                         <div class="display-4 mb-3">
                             @correctCount / @totalQuestions
                         </div>
-                        <p class="lead">@accuracyPercent% rätt</p>
+                        <p class="lead">Detta försök: @accuracyPercent% rätt</p>
+                        @if (serverAccuracyPercent.HasValue)
+                        {
+                            <p class="text-muted">Total accuracy för denna subkategori: @serverAccuracyPercent%</p>
+                        }
 
                         @if (accuracyPercent >= 80)
                         {
@@ -148,6 +152,7 @@
     private int correctCount = 0;
     private int totalQuestions = 0;
     private int accuracyPercent = 0;
+    private int? serverAccuracyPercent; // Total accuracy från servern för hela subkategorin
 
     private int progressPercent => totalQuestions > 0 ? (int)((currentQuestionIndex + 1) * 100.0 / totalQuestions) : 0;
 
@@ -221,15 +226,16 @@
             {
                 var result = await resp.Content.ReadFromJsonAsync<SubmitAnswerResponse>();
                 isLastAnswerCorrect = result?.IsCorrect ?? false;
+                serverAccuracyPercent = result?.AccuracyPercent; // Spara server-accuracy
 
                 if (isLastAnswerCorrect)
                 {
                     correctCount++;
-                    feedbackMessage = "Rätt svar!";
+                    feedbackMessage = $"Rätt svar! Total accuracy: {serverAccuracyPercent}%";
                 }
                 else
                 {
-                    feedbackMessage = "Fel svar.";
+                    feedbackMessage = $"Fel svar. Total accuracy: {serverAccuracyPercent}%";
                 }
 
                 hasAnswered = true;
@@ -296,5 +302,7 @@
     private class SubmitAnswerResponse
     {
         public bool IsCorrect { get; set; }
+        public double Accuracy { get; set; }          // 0.0-1.0
+        public int AccuracyPercent { get; set; }      // 0-100
     }
 }
