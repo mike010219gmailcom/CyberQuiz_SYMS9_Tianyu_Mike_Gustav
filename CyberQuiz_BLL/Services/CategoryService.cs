@@ -11,30 +11,67 @@ namespace CyberQuiz_BLL.Services
     public class CategoryService: ICategoryService
     {
         // Inject repository
-        private readonly CategoryRepository _categoryRepository;
-        public CategoryService(CategoryRepository categoryRepository)
+        private readonly ICategoryRepository _categoryRepository;
+        private readonly IQuizRepository _quizRepository;
+        private readonly IUserResultRepository _userResultRepository;
+        public CategoryService(
+            ICategoryRepository categoryRepository,
+            IQuizRepository quizRepository,
+            IUserResultRepository userResultRepository)
         {
             _categoryRepository = categoryRepository;
-
+            _quizRepository = quizRepository;
+            _userResultRepository = userResultRepository;
         }
 
         public async Task<List<CategoryDto>> GetAllCategoriesAsync(
+            string userId,
             CancellationToken ct = default)
         {
-            var categories = await _categoryRepository
-                .GetAllWithSubCategoriesAsync(ct);
+            var categories = await _categoryRepository.GetAllWithSubCategoriesAsync(ct);
 
-                return categories.Select(c => new CategoryDto
+            var categoryDtos = new List<CategoryDto>();
+
+            foreach (var cat in categories)
+            {
+                // Order subcategories
+                var subs = cat.SubCategories.OrderBy(s => s.Order).ToList();
+                var subDtos = new List<SubCategoryDto>();
+
+                for (int i = 0; i < subs.Count; i++)
                 {
-                    Id = c.Id,
-                    Name = c.Name,
-                    SubCategories = c.SubCategories.Select(sc => new SubCategoryDto
+                    var scEntity = subs[i];
+
+                    var scDto = new SubCategoryDto
                     {
-                        Id = sc.Id,
-                        Name = sc.Name,
-                    }).ToList()
-            })
-            .ToList();
+                        Id = scEntity.Id,
+                        Name = scEntity.Name,
+                        Order = scEntity.Order,
+                        QuestionCount = await _quizRepository.GetQuestionCountForSubCategoryAsync(scEntity.Id, ct)
+                    };
+
+                    if (i == 0)
+                        scDto.IsLocked = false; // first subcategory unlocked
+                    else
+                    {
+                        var prevAccuracy = await _userResultRepository
+                            .GetAccuracyForUserInSubCategoryAsync(userId, subs[i - 1].Id, ct);
+
+                        scDto.IsLocked = prevAccuracy < 0.8;
+                    }
+
+                    subDtos.Add(scDto);
+                }
+
+                categoryDtos.Add(new CategoryDto
+                {
+                    Id = cat.Id,
+                    Name = cat.Name,
+                    SubCategories = subDtos
+                });
+            }
+
+            return categoryDtos;
         }
     }
 }

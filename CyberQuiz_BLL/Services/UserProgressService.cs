@@ -13,8 +13,8 @@ namespace CyberQuiz_BLL.Services
         private readonly ICategoryRepository _categoryRepository;
         private readonly IUserResultRepository _userResultRepository;
         public UserProgressService(
-            CategoryRepository categoryRepository,
-            UserResultRepository userResultRepository)
+            ICategoryRepository categoryRepository,
+            IUserResultRepository userResultRepository)
         {
             _categoryRepository = categoryRepository;
             _userResultRepository = userResultRepository;
@@ -37,9 +37,6 @@ namespace CyberQuiz_BLL.Services
                 };
             }
 
-            // load all subCategory names
-            var allSubCategories = await _categoryRepository.GetAllWithSubCategoriesAsync(ct);
-
             // group by subCategoryId
             var history = results
                 .GroupBy(r => r.QuizAttemptId)
@@ -59,8 +56,8 @@ namespace CyberQuiz_BLL.Services
                     return new QuizSummaryDto
                     {
                         QuizAttemptId = g.Key,
-                        SubCategoryId = subCategoryId,
-                        SubCategoryName = subCategory?.Name ?? "Unknown", // get sc name
+                        SubCategoryId = g.First().SubCategoryId,
+                        SubCategoryName = g.First().SubCategory?.Name ?? "Unknown", // get sc name
                         TotalQuestions = totalQuestions,
                         CorrectAnswers = correctAnswers,
                         ScorePercentage = scorePercentage,

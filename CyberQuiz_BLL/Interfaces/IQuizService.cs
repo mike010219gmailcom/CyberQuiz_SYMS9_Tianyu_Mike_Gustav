@@ -12,7 +12,7 @@ namespace CyberQuiz_BLL.Interfaces
         //Task<List<CategoryDto>> GetCategoriesAsync();
         //Task<List<SubCategoryDto>> GetSubCategoriesAsync(int categoryId);
         Task<List<QuestionDto>> GetQuestionsAsync(int subCategoryId, string userId, CancellationToken ct = default);
-        Task<QuizSummaryDto> SubmitQuizAysnc(string userId, SubmitQuizDto dto, CancellationToken ct = default);
-        Task<QuizSummaryDto> GetQuizSummaryAsync(string userid, int subcategoryid);
+        Task<QuizSummaryDto> SubmitQuizAsync(string userId, SubmitQuizDto dto, CancellationToken ct = default);
+        Task<QuizSummaryDto> GetQuizSummaryAsync(string userid, Guid quizAttemptId, CancellationToken ct = default);
     }
 }
