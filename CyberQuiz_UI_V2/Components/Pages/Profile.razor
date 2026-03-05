@@ -1,0 +1,315 @@
+@page "/profile"
+@rendermode InteractiveServer
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider? AuthProvider
+
+<PageTitle>Profil</PageTitle>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">Profil</h2>
+            <small class="text-muted">Din progression och kontoinställningar</small>
+        </div>
+        <div class="text-end">
+            @if (!string.IsNullOrEmpty(userName))
+            {
+                <div class="fw-semibold">@userName</div>
+            }
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Laddar profil...</span>
+            </div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-warning">
+            <strong>Info:</strong> @errorMessage
+        </div>
+    }
+    else if (profileData != null)
+    {
+        <!-- Total Progression -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm text-center">
+                    <div class="card-body py-5">
+                        <h3 class="mb-3">Din totala progression</h3>
+                        <div class="display-3 mb-3">
+                            <span class="@GetAccuracyColorClass(profileData.TotalAccuracyPercent)">
+                                @profileData.TotalAccuracyPercent%
+                            </span>
+                        </div>
+                        <p class="lead mb-3">@profileData.TotalCorrect av @profileData.TotalAnswers frågor rätt</p>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar @GetProgressBarClass(profileData.TotalAccuracyPercent)" 
+                                 role="progressbar" 
+                                 style="width: @profileData.TotalAccuracyPercent%" 
+                                 aria-valuenow="@profileData.TotalAccuracyPercent" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                @profileData.TotalAccuracyPercent%
+                            </div>
+                        </div>
+                        @if (profileData.TotalAccuracyPercent >= 80)
+                        {
+                            <div class="alert alert-success mt-3 mb-0">
+                                <strong>Utmärkt!</strong> Du har nått 80%-målet.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progression per Subkategori -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">Progression per subkategori</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (profileData.PerSubCategory?.Any() == true)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Subkategori</th>
+                                            <th style="width: 50%;">Progression</th>
+                                            <th class="text-end">Accuracy</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var sub in profileData.PerSubCategory)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <strong>@sub.SubCategoryName</strong>
+                                                </td>
+                                                <td>
+                                                    <div class="progress" style="height: 25px;">
+                                                        <div class="progress-bar @GetProgressBarClass(sub.AccuracyPercent)" 
+                                                             role="progressbar" 
+                                                             style="width: @sub.AccuracyPercent%" 
+                                                             aria-valuenow="@sub.AccuracyPercent" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100">
+                                                            @sub.AccuracyPercent%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-end">
+                                                    <span class="badge @GetBadgeClass(sub.AccuracyPercent) fs-6">
+                                                        @sub.AccuracyPercent%
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info mb-0">
+                                Du har inte svarat på några frågor än. <a href="/start" class="alert-link">Gå till Start</a> för att börja!
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ändra E-post -->
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">Ändra e-post</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Ny e-post</label>
+                            <input type="email" class="form-control" @bind="newEmail" placeholder="exempel@mail.com" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bekräfta e-post</label>
+                            <input type="email" class="form-control" @bind="confirmEmail" placeholder="exempel@mail.com" />
+                        </div>
+                        <button class="btn btn-primary" @onclick="ChangeEmail" disabled>
+                            Uppdatera e-post (kommer snart)
+                        </button>
+                        @if (!string.IsNullOrEmpty(emailMessage))
+                        {
+                            <div class="alert alert-info mt-3 mb-0">@emailMessage</div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ändra Lösenord -->
+            <div class="col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">Ändra lösenord</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nuvarande lösenord</label>
+                            <input type="password" class="form-control" @bind="currentPassword" placeholder="••••••••" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nytt lösenord</label>
+                            <input type="password" class="form-control" @bind="newPassword" placeholder="••••••••" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Bekräfta nytt lösenord</label>
+                            <input type="password" class="form-control" @bind="confirmPassword" placeholder="••••••••" />
+                        </div>
+                        <button class="btn btn-primary" @onclick="ChangePassword" disabled>
+                            Uppdatera lösenord (kommer snart)
+                        </button>
+                        @if (!string.IsNullOrEmpty(passwordMessage))
+                        {
+                            <div class="alert alert-info mt-3 mb-0">@passwordMessage</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+    private ProfileDataModel? profileData;
+    private string? userName;
+
+    // Formulär-fält
+    private string? newEmail;
+    private string? confirmEmail;
+    private string? emailMessage;
+
+    private string? currentPassword;
+    private string? newPassword;
+    private string? confirmPassword;
+    private string? passwordMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TrySetUserNameAsync();
+        await LoadProfileAsync();
+    }
+
+    private async Task TrySetUserNameAsync()
+    {
+        if (AuthProvider is null)
+            return;
+
+        try
+        {
+            var state = await AuthProvider.GetAuthenticationStateAsync();
+            var name = state.User.Identity?.Name;
+            if (!string.IsNullOrEmpty(name))
+                userName = name;
+        }
+        catch
+        {
+            // ignore - auth inte konfigurerad
+        }
+    }
+
+    private async Task LoadProfileAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var resp = await Http.GetAsync("/api/profile");
+            if (resp.IsSuccessStatusCode)
+            {
+                profileData = await resp.Content.ReadFromJsonAsync<ProfileDataModel>();
+            }
+            else if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                errorMessage = "Profil-endpoint saknas";
+            }
+            else if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                errorMessage = "Du måste vara inloggad för att se din profil.";
+            }
+            else
+            {
+                errorMessage = $"Kunde inte hämta profil (status: {resp.StatusCode}).";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Kunde inte nå servern. ({ex.Message})";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ChangeEmail()
+    {
+        emailMessage = "kommer snart.";
+    }
+
+    private void ChangePassword()
+    {
+        passwordMessage = "kommer snart.";
+    }
+
+    private string GetAccuracyColorClass(int percent)
+    {
+        if (percent >= 80) return "text-success";
+        if (percent >= 50) return "text-warning";
+        return "text-danger";
+    }
+
+    private string GetProgressBarClass(int percent)
+    {
+        if (percent >= 80) return "bg-success";
+        if (percent >= 50) return "bg-warning";
+        return "bg-danger";
+    }
+
+    private string GetBadgeClass(int percent)
+    {
+        if (percent >= 80) return "bg-success";
+        if (percent >= 50) return "bg-warning";
+        return "bg-danger";
+    }
+
+    private class ProfileDataModel
+    {
+        public int TotalAnswers { get; set; }
+        public int TotalCorrect { get; set; }
+        public double TotalAccuracy { get; set; }
+        public int TotalAccuracyPercent { get; set; }
+        public List<SubCategoryProgressModel>? PerSubCategory { get; set; }
+    }
+
+    private class SubCategoryProgressModel
+    {
+        public int SubCategoryId { get; set; }
+        public string? SubCategoryName { get; set; }
+        public double Accuracy { get; set; }
+        public int AccuracyPercent { get; set; }
+    }
+}
