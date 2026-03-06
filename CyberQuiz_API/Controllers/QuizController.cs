@@ -1,5 +1,8 @@
 ﻿using CyberQuiz.DAL.Models;
 using CyberQuiz.DAL.Repositories;
+using CyberQuiz_BLL.DTOs;
+using CyberQuiz_BLL.Interfaces;
+using CyberQuiz_Shared.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -12,56 +15,34 @@ namespace CyberQuiz_API.Controllers
     [Authorize]
     public class QuizController : Controller
     {
-        private readonly IQuizRepository _quizRepo;
-        private readonly IUserResultRepository _resultRepo;
+        private readonly IQuizService _quizService;
+        private readonly IUserProgressService _userProgressService;
+        //private readonly ICategoryService _categoryService;
 
-        public QuizController(IQuizRepository quizRepo, IUserResultRepository resultRepo)
+        public QuizController(IQuizService quizService, IUserProgressService userProgressService)
         {
-            _quizRepo = quizRepo;
-            _resultRepo = resultRepo;
+            _quizService = quizService;
+            _userProgressService = userProgressService;
         }
 
-
+        // Get /quiz/questions/1
         [HttpGet("start/{subCategoryId:int}")]
         public async Task<IActionResult> Start(int subCategoryId, CancellationToken ct)
         {
+            // Get questions
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userId))
                 return Unauthorized(new { message = "Not logged in" });
 
-            var sub = await _quizRepo.GetSubCategoryWithQuestionsAsync(subCategoryId, ct);
-            if (sub is null)
-                return NotFound(new { message = "SubCategory not found" });
+            var questions = await _quizService.GetQuestionsAsync(subCategoryId, userId, ct);
 
-            // Mapping i controller
-            var response = new
-            {
-                subCategory = new { id = sub.Id, name = sub.Name },
-                questions = sub.Questions
-                    .OrderBy(q => q.Id)
-                    .Select(q => new
-                    {
-                        id = q.Id,
-                        text = q.Text,
-                        answerOptions = q.AnswerOptions
-                            .OrderBy(a => a.Id)
-                            .Select(a => new { id = a.Id, text = a.Text })
-                    })
-            };
-
-            return Ok(response);
+            return Ok(questions);
         }
 
-        public sealed class SubmitAnswerRequest
-        {
-            public int SubCategoryId { get; set; }
-            public int QuestionId { get; set; }
-            public int SelectedAnswerOptionId { get; set; }
-        }
 
         // POST: api/quiz/answer
-        [HttpPost("answer")]
-        public async Task<IActionResult> SubmitAnswer([FromBody] SubmitAnswerRequest req, CancellationToken ct)
+        [HttpPost("submit")]
+        public async Task<IActionResult> SubmitQuiz([FromBody] SubmitQuizDto dto, CancellationToken ct)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userId))
@@ -70,44 +51,21 @@ namespace CyberQuiz_API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (req.SubCategoryId <= 0 || req.QuestionId <= 0 || req.SelectedAnswerOptionId <= 0)
-                return BadRequest(new { message = "Invalid request" });
+            var summary = await _quizService.SubmitQuizAsync(userId, dto, ct);
 
-            var question = await _quizRepo.GetQuestionWithOptionsAsync(req.QuestionId, ct);
-            if (question is null)
-                return NotFound(new { message = "Question not found" });
+            return Ok(summary);
+        }
 
-            if (question.SubCategoryId != req.SubCategoryId)
-                return BadRequest(new { message = "Question does not belong to subcategory" });
+        // GET: api/quiz/summary
+        [HttpGet("summary/{quizAttemptId:guid}")]
+        public async Task<IActionResult> Summary(string userId, Guid quizAttemptId, CancellationToken ct)
+        {
+            var summary = await _quizService.GetQuizSummaryAsync(userId, quizAttemptId, ct);
 
-            var selected = question.AnswerOptions.FirstOrDefault(a => a.Id == req.SelectedAnswerOptionId);
-            if (selected is null)
-                return BadRequest(new { message = "Answer option not found" });
+            if (summary == null)
+                return NotFound();
 
-            var isCorrect = selected.IsCorrect;
-
-            // Krav: spara varje svar
-            var result = new UserResult
-            {
-                UserId = userId,
-                SubCategoryId = req.SubCategoryId,
-                QuestionId = req.QuestionId,
-                SelectedAnswerOptionId = req.SelectedAnswerOptionId,
-                IsCorrect = isCorrect,
-                AnsweredAtUtc = DateTimeOffset.UtcNow
-            };
-
-            await _resultRepo.AddResultAsync(result, ct);
-
-
-            var accuracy = await _resultRepo.GetAccuracyForUserInSubCategoryAsync(userId, req.SubCategoryId, ct);
-
-            return Ok(new
-            {
-                isCorrect,
-                accuracy,
-                accuracyPercent = (int)Math.Round(accuracy * 100)
-            });
+            return Ok(summary);
         }
     }
 }

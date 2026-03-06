@@ -53,6 +53,11 @@ namespace CyberQuiz_BLL.Services
         public async Task<QuizSummaryDto> SubmitQuizAsync(string userId, SubmitQuizDto dto, CancellationToken ct = default)
         {
             // generate a new QuizAttemptId
+            var existingAttempt = await _userResultRepository.GetResultsForUserAndSubCategoryAsync(userId, dto.SubCategoryId, ct);
+
+            if (existingAttempt.Any())
+                throw new Exception("Quiz already submitted");
+
             var quizAttemptId = Guid.NewGuid();
 
             // load subcategory with questions
