@@ -11,5 +11,6 @@ namespace CyberQuiz_BLL.DTOs
         public int Order {  get; set; }
         public int QuestionCount { get; set; }
         public bool IsLocked { get; set; }
+        //public double? PreviousAccuracy {  get; set; }
     }
 }
