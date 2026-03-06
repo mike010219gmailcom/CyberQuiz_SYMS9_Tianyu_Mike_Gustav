@@ -1,3 +1,5 @@
+using CyberQuiz_BLL.Interfaces;
+using CyberQuiz_BLL.Services;
 using CyberQuiz_UI_V2.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -5,6 +7,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Add interfaces and service
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IQuizService,QuizService>();
+builder.Services.AddScoped<IUserProgressService,UserProgressService>();
 
 // HttpClient for calling API endpoints - configured with API base URL
 var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7148";
