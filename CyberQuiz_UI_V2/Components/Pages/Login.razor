@@ -2,8 +2,10 @@
 @rendermode InteractiveServer
 @using System.ComponentModel.DataAnnotations
 @using System.Net.Http.Json
+@using CyberQuiz_UI_V2.Services
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject TokenService TokenService
 
 <PageTitle>Logga in</PageTitle>
 
@@ -63,8 +65,16 @@
             var response = await Http.PostAsJsonAsync("/api/auth/login", loginModel);
             if (response.IsSuccessStatusCode)
             {
-                
-                Navigation.NavigateTo("/start");
+                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+                if (result != null && !string.IsNullOrEmpty(result.Token))
+                {
+                    TokenService.SetToken(result.Token);
+                    Navigation.NavigateTo("/start");
+                }
+                else
+                {
+                    errorMessage = "Kunde inte hämta token från servern.";
+                }
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
@@ -95,5 +105,10 @@
         public string? Password { get; set; }
 
         public bool RememberMe { get; set; }
+    }
+
+    private class LoginResponse
+    {
+        public string Token { get; set; } = "";
     }
 }

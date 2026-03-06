@@ -69,5 +69,55 @@ namespace CyberQuiz_BLL.Services
                 UserQuizHistory = history
             };
         }
+
+        // NEW: Get full user profile with all subcategories
+        public async Task<UserProfileDto> GetFullUserProfileAsync(string userId, CancellationToken ct = default)
+        {
+            // Get all subcategories
+            var allCategories = await _categoryRepository.GetAllWithSubCategoriesAsync(ct);
+            var allSubCategories = allCategories.SelectMany(c => c.SubCategories).ToList();
+
+            var perSubCategory = new List<SubCategoryProgressDto>();
+            int totalAnswers = 0;
+            int totalCorrect = 0;
+
+            foreach (var sc in allSubCategories)
+            {
+                var results = await _userResultRepository
+                    .GetResultsForUserAndSubCategoryAsync(userId, sc.Id, ct);
+
+                if (results.Any())
+                {
+                    int answers = results.Count;
+                    int correct = results.Count(r => r.IsCorrect);
+
+                    totalAnswers += answers;
+                    totalCorrect += correct;
+
+                    double accuracy = answers > 0 ? (double)correct / answers : 0;
+                    int accuracyPercent = (int)(accuracy * 100);
+
+                    perSubCategory.Add(new SubCategoryProgressDto
+                    {
+                        SubCategoryId = sc.Id,
+                        SubCategoryName = sc.Name,
+                        Accuracy = accuracy,
+                        AccuracyPercent = accuracyPercent
+                    });
+                }
+            }
+
+            double totalAccuracy = totalAnswers > 0 ? (double)totalCorrect / totalAnswers : 0;
+            int totalAccuracyPercent = (int)(totalAccuracy * 100);
+
+            return new UserProfileDto
+            {
+                TotalAnswers = totalAnswers,
+                TotalCorrect = totalCorrect,
+                TotalAccuracy = totalAccuracy,
+                TotalAccuracyPercent = totalAccuracyPercent,
+                PerSubCategory = perSubCategory
+            };
+        }
     }
 }

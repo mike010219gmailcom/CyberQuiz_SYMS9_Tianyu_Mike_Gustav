@@ -1,9 +1,5 @@
-using CyberQuiz.DAL.Data;
-using CyberQuiz.DAL.Repositories;
-using CyberQuiz_BLL.Interfaces;
-using CyberQuiz_BLL.Services;
 using CyberQuiz_UI_V2.Components;
-using Microsoft.EntityFrameworkCore;
+using CyberQuiz_UI_V2.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,23 +7,24 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Add repo
-builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<IQuizRepository, QuizRepository>();
-builder.Services.AddScoped<IUserResultRepository, UserResultRepository>();
+// TokenService for JWT authentication - Singleton to persist across Blazor Server circuits
+builder.Services.AddSingleton<TokenService>();
+builder.Services.AddScoped<TokenHttpMessageHandler>(); // Scoped is OK for handler
 
-// Add interfaces and service
-builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<IQuizService, QuizService>();
-builder.Services.AddScoped<IUserProgressService, UserProgressService>();
-
-
-builder.Services.AddDbContext<CyberQuizDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// HttpClient for calling API endpoints - configured with API base URL
+// HttpClient for calling API endpoints - configured with API base URL and JWT token
 var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7148";
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
+builder.Services.AddScoped(sp =>
+{
+    var tokenHandler = sp.GetRequiredService<TokenHttpMessageHandler>();
+    tokenHandler.InnerHandler = new HttpClientHandler();
+
+    var client = new HttpClient(tokenHandler)
+    {
+        BaseAddress = new Uri(apiBaseUrl)
+    };
+
+    return client;
+});
 
 var app = builder.Build();
 
