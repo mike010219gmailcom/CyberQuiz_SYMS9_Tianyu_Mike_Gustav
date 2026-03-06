@@ -1,4 +1,5 @@
-﻿using CyberQuiz.DAL.Repositories;
+﻿
+using CyberQuiz_BLL.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -6,29 +7,27 @@ using System.Security.Claims;
 
 namespace CyberQuiz_API.Controllers
 {
-
-
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
     public class CategoriesController : Controller
     {
-        private readonly ICategoryRepository _categoryRepo;
+        private readonly ICategoryService _categoryService;
 
-        public CategoriesController(ICategoryRepository categoryRepo)
+        public CategoriesController(ICategoryService categoryService)
         {
-            _categoryRepo = categoryRepo;
+            _categoryService = categoryService;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll(CancellationToken ct)
+        public async Task<IActionResult> GetAllCategoriesAsync(CancellationToken ct)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             if (string.IsNullOrWhiteSpace(userId))
                 return Unauthorized(new { message = "Not logged in" });
 
-            // Bara hämta data från DAL
-            var categories = await _categoryRepo.GetAllWithSubCategoriesAsync(ct);
+            var categories = await _categoryService.GetAllCategoriesAsync(userId, ct);
 
             return Ok(categories);
         }
