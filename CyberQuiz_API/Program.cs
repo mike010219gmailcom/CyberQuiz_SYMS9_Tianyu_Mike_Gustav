@@ -1,6 +1,8 @@
 using CyberQuiz.DAL;
 using CyberQuiz.DAL.Data;
 using CyberQuiz.DAL.Seeding;
+using CyberQuiz_BLL.Interfaces;
+using CyberQuiz_BLL.Services;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +14,11 @@ builder.Services.AddSwaggerGen();
 
 // DAL (DbContext + repositories)
 builder.Services.AddDal(builder.Configuration);
+
+// BLL Services
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IQuizService, QuizService>();
+builder.Services.AddScoped<IUserProgressService, UserProgressService>();
 
 // Identity (behövs för default-user seed)
 builder.Services
