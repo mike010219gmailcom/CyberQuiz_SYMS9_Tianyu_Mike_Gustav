@@ -1,7 +1,9 @@
+using CyberQuiz.DAL.Data;
 using CyberQuiz.DAL.Repositories;
 using CyberQuiz_BLL.Interfaces;
 using CyberQuiz_BLL.Services;
 using CyberQuiz_UI_V2.Components;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +20,10 @@ builder.Services.AddScoped<IUserResultRepository, UserResultRepository>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IUserProgressService, UserProgressService>();
+
+
+builder.Services.AddDbContext<CyberQuizDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // HttpClient for calling API endpoints - configured with API base URL
 var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7148";
