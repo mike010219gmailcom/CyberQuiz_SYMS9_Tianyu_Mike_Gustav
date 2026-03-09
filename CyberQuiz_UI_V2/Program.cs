@@ -9,12 +9,25 @@ builder.Services.AddRazorComponents()
 
 // TokenService for JWT authentication - Singleton to persist across Blazor Server circuits
 builder.Services.AddSingleton<TokenService>();
-builder.Services.AddScoped<TokenHttpMessageHandler>(); // Scoped is OK for handler
 
-builder.Services.AddDbContext<CyberQuizDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// HttpClient with JWT token handler using IHttpClientFactory
+var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7148";
 
-    return client;
+builder.Services.AddHttpClient("API", client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+})
+.AddHttpMessageHandler(sp =>
+{
+    var tokenService = sp.GetRequiredService<TokenService>();
+    return new TokenHttpMessageHandler(tokenService);
+});
+
+// Register HttpClient for injection (uses named client)
+builder.Services.AddScoped(sp =>
+{
+    var factory = sp.GetRequiredService<IHttpClientFactory>();
+    return factory.CreateClient("API");
 });
 
 var app = builder.Build();
