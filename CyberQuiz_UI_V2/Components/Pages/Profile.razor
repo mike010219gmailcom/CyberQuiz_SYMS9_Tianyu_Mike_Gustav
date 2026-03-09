@@ -154,12 +154,20 @@
                             <label class="form-label">Bekräfta e-post</label>
                             <input type="email" class="form-control" @bind="confirmEmail" placeholder="exempel@mail.com" />
                         </div>
-                        <button class="btn btn-primary" @onclick="ChangeEmail" disabled>
-                            Uppdatera e-post (kommer snart)
+                        <button class="btn btn-primary" @onclick="ChangeEmail" disabled="@isChangingEmail">
+                            @if (isChangingEmail)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Uppdaterar...</span>
+                            }
+                            else
+                            {
+                                <span>Uppdatera e-post</span>
+                            }
                         </button>
                         @if (!string.IsNullOrEmpty(emailMessage))
                         {
-                            <div class="alert alert-info mt-3 mb-0">@emailMessage</div>
+                            <div class="alert @(emailMessageIsError ? "alert-danger" : "alert-success") mt-3 mb-0">@emailMessage</div>
                         }
                     </div>
                 </div>
@@ -184,12 +192,20 @@
                             <label class="form-label">Bekräfta nytt lösenord</label>
                             <input type="password" class="form-control" @bind="confirmPassword" placeholder="••••••••" />
                         </div>
-                        <button class="btn btn-primary" @onclick="ChangePassword" disabled>
-                            Uppdatera lösenord (kommer snart)
+                        <button class="btn btn-primary" @onclick="ChangePassword" disabled="@isChangingPassword">
+                            @if (isChangingPassword)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Uppdaterar...</span>
+                            }
+                            else
+                            {
+                                <span>Uppdatera lösenord</span>
+                            }
                         </button>
                         @if (!string.IsNullOrEmpty(passwordMessage))
                         {
-                            <div class="alert alert-info mt-3 mb-0">@passwordMessage</div>
+                            <div class="alert @(passwordMessageIsError ? "alert-danger" : "alert-success") mt-3 mb-0">@passwordMessage</div>
                         }
                     </div>
                 </div>
@@ -208,11 +224,15 @@
     private string? newEmail;
     private string? confirmEmail;
     private string? emailMessage;
+    private bool emailMessageIsError;
+    private bool isChangingEmail;
 
     private string? currentPassword;
     private string? newPassword;
     private string? confirmPassword;
     private string? passwordMessage;
+    private bool passwordMessageIsError;
+    private bool isChangingPassword;
 
     protected override async Task OnInitializedAsync()
     {
@@ -300,14 +320,134 @@
         }
     }
 
-    private void ChangeEmail()
+    private async Task ChangeEmail()
     {
-        emailMessage = "kommer snart.";
+        emailMessage = null;
+        emailMessageIsError = false;
+
+        // Validering
+        if (string.IsNullOrWhiteSpace(newEmail))
+        {
+            emailMessage = "E-post får inte vara tom";
+            emailMessageIsError = true;
+            return;
+        }
+
+        if (newEmail != confirmEmail)
+        {
+            emailMessage = "E-postadresserna matchar inte";
+            emailMessageIsError = true;
+            return;
+        }
+
+        isChangingEmail = true;
+
+        try
+        {
+            var request = new { NewEmail = newEmail, ConfirmEmail = confirmEmail };
+            var response = await Http.PostAsJsonAsync("/api/profile/change-email", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+                emailMessage = result?.Message ?? "E-post uppdaterad!";
+                emailMessageIsError = false;
+
+                // Rensa fälten
+                newEmail = null;
+                confirmEmail = null;
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<ApiResponse>();
+                emailMessage = error?.Message ?? "Kunde inte uppdatera e-post";
+                emailMessageIsError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            emailMessage = $"Fel: {ex.Message}";
+            emailMessageIsError = true;
+        }
+        finally
+        {
+            isChangingEmail = false;
+        }
     }
 
-    private void ChangePassword()
+    private async Task ChangePassword()
     {
-        passwordMessage = "kommer snart.";
+        passwordMessage = null;
+        passwordMessageIsError = false;
+
+        // Validering
+        if (string.IsNullOrWhiteSpace(currentPassword))
+        {
+            passwordMessage = "Nuvarande lösenord krävs";
+            passwordMessageIsError = true;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(newPassword))
+        {
+            passwordMessage = "Nytt lösenord får inte vara tomt";
+            passwordMessageIsError = true;
+            return;
+        }
+
+        if (newPassword != confirmPassword)
+        {
+            passwordMessage = "Lösenorden matchar inte";
+            passwordMessageIsError = true;
+            return;
+        }
+
+        if (newPassword.Length < 6)
+        {
+            passwordMessage = "Lösenordet måste vara minst 6 tecken långt";
+            passwordMessageIsError = true;
+            return;
+        }
+
+        isChangingPassword = true;
+
+        try
+        {
+            var request = new 
+            { 
+                CurrentPassword = currentPassword, 
+                NewPassword = newPassword, 
+                ConfirmPassword = confirmPassword 
+            };
+            var response = await Http.PostAsJsonAsync("/api/profile/change-password", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+                passwordMessage = result?.Message ?? "Lösenord uppdaterat!";
+                passwordMessageIsError = false;
+
+                // Rensa fälten
+                currentPassword = null;
+                newPassword = null;
+                confirmPassword = null;
+            }
+            else
+            {
+                var error = await response.Content.ReadFromJsonAsync<ApiResponse>();
+                passwordMessage = error?.Message ?? "Kunde inte uppdatera lösenord";
+                passwordMessageIsError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            passwordMessage = $"Fel: {ex.Message}";
+            passwordMessageIsError = true;
+        }
+        finally
+        {
+            isChangingPassword = false;
+        }
     }
 
     private string GetAccuracyColorClass(int percent)
@@ -346,5 +486,10 @@
         public string? SubCategoryName { get; set; }
         public double Accuracy { get; set; }
         public int AccuracyPercent { get; set; }
+    }
+
+    private class ApiResponse
+    {
+        public string Message { get; set; } = "";
     }
 }
