@@ -4,24 +4,26 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace CyberQuiz.DAL.Seeding;
-
+// Statisk klass som ansvarar för att fylla databasen med grunddata
 public static class DatabaseSeeder
 {
+    
+    // Huvudmetod som körs vid applikationsstart för att initiera databasen
     public static async Task SeedAsync(
         CyberQuizDbContext db,
         UserManager<IdentityUser> userManager,
         CancellationToken ct = default)
     {
-        // Kör migrations
+        // Kör alla väntande migrationer mot databasen
         await db.Database.MigrateAsync(ct);
 
-        // Default user
+        // Skapar standardanvändaren om den inte redan finns
         await EnsureDefaultUserAsync(userManager);
 
-        // Seed domändata bara om tom DB
+        // Avbryt seed-processen om kategorier redan finns i databasen
         if (await db.Categories.AnyAsync(ct))
             return;
-
+        // Skapar tre huvudkategorier för quiz-frågorna
         var categories = new List<Category>
         {
             new() { Name = "Grundläggande säkerhet" },
@@ -31,6 +33,7 @@ public static class DatabaseSeeder
         db.Categories.AddRange(categories);
         await db.SaveChangesAsync(ct);
 
+        // Skapar underkategorier kopplade till respektive huvudkategori
         var subCategories = new List<SubCategory>
         {
             new() { CategoryId = categories[0].Id, Name = "Lösenord & MFA", Order = 1 },
@@ -45,7 +48,11 @@ public static class DatabaseSeeder
         db.SubCategories.AddRange(subCategories);
         await db.SaveChangesAsync(ct);
 
+<<<<<<< Updated upstream
         // Lösenord & MFA
+=======
+        // Skapar quiz-frågor kopplade till specifika underkategorier
+>>>>>>> Stashed changes
         var q1 = new Question
         {
             SubCategoryId = subCategories[0].Id,
@@ -120,6 +127,7 @@ public static class DatabaseSeeder
         db.Questions.AddRange(q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12);
         await db.SaveChangesAsync(ct);
 
+        // Skapar svarsalternativ för varje fråga
         db.AnswerOptions.AddRange(
             // q1 - Lösenord
             new AnswerOption { QuestionId = q1.Id, Text = "Samma lösenord överallt, men långt", IsCorrect = false },
@@ -197,11 +205,13 @@ public static class DatabaseSeeder
         await db.SaveChangesAsync(ct);
     }
 
+    // Privat hjälpmetod som säkerställer att en standardanvändare finns i systemet
     private static async Task EnsureDefaultUserAsync(UserManager<IdentityUser> userManager)
     {
         const string username = "user";
         const string password = "Password1234!";
 
+        // Kontrollera om användaren redan existerar – avbryt i så fall
         var existing = await userManager.FindByNameAsync(username);
         if (existing != null) return;
 
@@ -212,7 +222,10 @@ public static class DatabaseSeeder
             EmailConfirmed = true
         };
 
+        // Försök skapa användaren med det angivna lösenordet
         var result = await userManager.CreateAsync(user, password);
+
+        // Om skapandet misslyckades – kasta ett undantag med alla felmeddelanden sammanfogade
         if (!result.Succeeded)
         {
             var msg = string.Join("; ", result.Errors.Select(e => $"{e.Code}: {e.Description}"));
