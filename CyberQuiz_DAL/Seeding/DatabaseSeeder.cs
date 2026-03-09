@@ -31,6 +31,7 @@ public static class DatabaseSeeder
         db.Categories.AddRange(categories);
         await db.SaveChangesAsync(ct);
 
+
         var subCategories = new List<SubCategory>
         {
             new() { CategoryId = categories[0].Id, Name = "Lösenord & MFA", Order = 1 },
