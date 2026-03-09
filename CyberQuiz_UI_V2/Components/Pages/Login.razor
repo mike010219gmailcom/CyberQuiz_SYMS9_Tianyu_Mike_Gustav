@@ -69,6 +69,10 @@
                 if (result != null && !string.IsNullOrEmpty(result.Token))
                 {
                     TokenService.SetToken(result.Token);
+
+                    // Vänta så token hinner propagera
+                    await Task.Delay(200);
+
                     Navigation.NavigateTo("/start");
                 }
                 else

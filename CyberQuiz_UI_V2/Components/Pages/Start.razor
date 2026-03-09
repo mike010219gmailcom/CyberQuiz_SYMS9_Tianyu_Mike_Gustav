@@ -107,6 +107,13 @@
 
 	protected override async Task OnInitializedAsync()
 	{
+		// Vänta tills token finns (max 5 sekunder)
+		// Detta hanterar race condition när Start laddar samtidigt som Login sparar token
+		for (int i = 0; i < 50 && string.IsNullOrEmpty(TokenService.GetToken()); i++)
+		{
+			await Task.Delay(100);
+		}
+
 		TrySetUserName();
 		await LoadCategoriesAsync();
 	}

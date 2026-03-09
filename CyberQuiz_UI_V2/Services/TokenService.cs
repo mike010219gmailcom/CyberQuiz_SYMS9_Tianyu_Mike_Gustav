@@ -7,10 +7,12 @@ public class TokenService
     public void SetToken(string token)
     {
         _token = token;
+        Console.WriteLine($"[TokenService] Token SET - Length: {token?.Length ?? 0}");
     }
 
     public string? GetToken()
     {
+        Console.WriteLine($"[TokenService] Token GET - Exists: {!string.IsNullOrEmpty(_token)}, Length: {_token?.Length ?? 0}");
         return _token;
     }
 
