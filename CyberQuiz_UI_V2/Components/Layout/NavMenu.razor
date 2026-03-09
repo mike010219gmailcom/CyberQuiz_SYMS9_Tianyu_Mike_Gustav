@@ -1,6 +1,10 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using CyberQuiz_UI_V2.Services
+@inject TokenService TokenService
+@inject NavigationManager Navigation
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">CyberQuiz_UI_V2</a>
+        <a class="navbar-brand" href="">CyberQuiz</a>
     </div>
 </div>
 
@@ -15,16 +19,30 @@
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
+            <NavLink class="nav-link" href="profile">
+                <span class="bi bi-person-circle-nav-menu" aria-hidden="true"></span> Profil
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
+            <a class="nav-link" href="javascript:void(0)" @onclick="Logout" @onclick:preventDefault @onclick:stopPropagation="true" style="cursor: pointer;">
+                <span class="bi bi-box-arrow-right-nav-menu" aria-hidden="true"></span> Logga ut
+            </a>
         </div>
     </nav>
 </div>
 
+@code {
+    private async Task Logout()
+    {
+        Console.WriteLine("[NavMenu] Logout clicked!");
+
+        TokenService.ClearToken();
+        Console.WriteLine("[NavMenu] Token cleared");
+
+        await Task.Delay(100); // Kort delay för att säkerställa token rensas
+
+        Console.WriteLine("[NavMenu] Navigating to /");
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+}
