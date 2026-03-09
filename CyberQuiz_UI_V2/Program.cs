@@ -11,17 +11,8 @@ builder.Services.AddRazorComponents()
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddScoped<TokenHttpMessageHandler>(); // Scoped is OK for handler
 
-// HttpClient for calling API endpoints - configured with API base URL and JWT token
-var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "https://localhost:7148";
-builder.Services.AddScoped(sp =>
-{
-    var tokenHandler = sp.GetRequiredService<TokenHttpMessageHandler>();
-    tokenHandler.InnerHandler = new HttpClientHandler();
-
-    var client = new HttpClient(tokenHandler)
-    {
-        BaseAddress = new Uri(apiBaseUrl)
-    };
+builder.Services.AddDbContext<CyberQuizDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
     return client;
 });
