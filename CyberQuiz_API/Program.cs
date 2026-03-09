@@ -3,7 +3,10 @@ using CyberQuiz.DAL.Data;
 using CyberQuiz.DAL.Seeding;
 using CyberQuiz_BLL.Interfaces;
 using CyberQuiz_BLL.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +14,21 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// CORS - Allow UI to call API
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowBlazorUI", policy =>
+    {
+        policy.WithOrigins(
+            "https://localhost:7063", // UI port (från din terminal)
+            "http://localhost:5116"   // HTTP fallback
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
+    });
+});
 
 // DAL (DbContext + repositories)
 builder.Services.AddDal(builder.Configuration);
@@ -26,16 +44,34 @@ builder.Services
     .AddEntityFrameworkStores<CyberQuizDbContext>()
     .AddDefaultTokenProviders();
 
-// Auth (cookies är enklast om UI+API kör samma host, annars JWT)
-builder.Services.ConfigureApplicationCookie(options =>
+// JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSettings["SecretKey"] ?? "CyberQuiz-Super-Secret-Key-Min-32-Chars-Long!";
+
+builder.Services.AddAuthentication(options =>
 {
-    options.LoginPath = "/login";
-    options.AccessDeniedPath = "/access-denied";
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"] ?? "CyberQuizAPI",
+        ValidAudience = jwtSettings["Audience"] ?? "CyberQuizUI",
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+        ClockSkew = TimeSpan.Zero
+    };
 });
 
 var app = builder.Build();
 
-// Seed + migrations
+// Seed + migrations (temporarily disabled until DAL fixes migrations)
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<CyberQuizDbContext>();
@@ -61,6 +97,8 @@ if (swaggerEnabled)
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowBlazorUI"); // Enable CORS
 
 app.UseAuthentication();
 app.UseAuthorization();
