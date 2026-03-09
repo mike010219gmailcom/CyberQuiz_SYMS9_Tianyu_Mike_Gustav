@@ -1,7 +1,6 @@
 @page "/subcategory/{SubCategoryId:int}"
 @rendermode InteractiveServer
 @using System.Net.Http.Json
-@using CyberQuiz_BLL.DTOs
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
@@ -113,43 +112,25 @@
 
         try
         {
-            // API returnerar nu List<QuestionDto> direkt (från QuizService)
+            // Använd befintlig endpoint från QuizController
             var resp = await Http.GetAsync($"/api/quiz/start/{SubCategoryId}");
             if (resp.IsSuccessStatusCode)
             {
-                var questions = await resp.Content.ReadFromJsonAsync<List<QuestionDto>>();
-
-                if (questions != null)
+                var quizData = await resp.Content.ReadFromJsonAsync<QuizDataModel>();
+                
+                if (quizData?.SubCategory != null)
                 {
                     subCategory = new SubCategoryDetailModel
                     {
-                        Id = SubCategoryId,
-                        Name = $"Subkategori {SubCategoryId}", // Temporary - visa ID tills vi får namn
-                        QuestionCount = questions.Count
+                        Id = quizData.SubCategory.Id,
+                        Name = quizData.SubCategory.Name,
+                        QuestionCount = quizData.Questions?.Count ?? 0
                     };
-
-                    // Om 0 frågor - visa meddelande
-                    if (questions.Count == 0)
-                    {
-                        errorMessage = "Inga frågor tillgängliga än för denna subkategori. Kom tillbaka snart!";
-                    }
                 }
                 else
                 {
                     errorMessage = "Subkategorin hittades inte.";
                 }
-            }
-            else if (resp.StatusCode == System.Net.HttpStatusCode.InternalServerError)
-            {
-                // QuizService kastar exception "No questions available" → 500
-                // Visa användarvänligt meddelande istället
-                subCategory = new SubCategoryDetailModel
-                {
-                    Id = SubCategoryId,
-                    Name = $"Subkategori {SubCategoryId}",
-                    QuestionCount = 0
-                };
-                errorMessage = "Inga frågor tillgängliga än för denna subkategori. Kom tillbaka snart!";
             }
             else if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -165,7 +146,7 @@
             }
 
             // Försök hämta tidigare resultat från profil (valfritt)
-            if (subCategory != null && subCategory.QuestionCount > 0)
+            if (subCategory != null)
             {
                 await TryLoadAccuracyAsync();
             }
@@ -211,6 +192,23 @@
         if (percent >= 80) return "text-success";
         if (percent >= 50) return "text-warning";
         return "text-danger";
+    }
+
+    private class QuizDataModel
+    {
+        public SubCategoryInfoModel? SubCategory { get; set; }
+        public List<QuestionModel>? Questions { get; set; }
+    }
+
+    private class SubCategoryInfoModel
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+    }
+
+    private class QuestionModel
+    {
+        public int Id { get; set; }
     }
 
     private class SubCategoryDetailModel

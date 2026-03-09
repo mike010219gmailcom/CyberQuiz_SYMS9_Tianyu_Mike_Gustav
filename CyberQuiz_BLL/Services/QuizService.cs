@@ -52,9 +52,11 @@ namespace CyberQuiz_BLL.Services
         // submitQuiz
         public async Task<QuizSummaryDto> SubmitQuizAsync(string userId, SubmitQuizDto dto, CancellationToken ct = default)
         {
-            // CHANGED BY UI: Removed "Quiz already submitted" check to allow retakes
-            // Users should be able to retake quizzes to improve their score (as shown in UI)
-            // Original logic blocked legitimate use case
+            // generate a new QuizAttemptId
+            var existingAttempt = await _userResultRepository.GetResultsForUserAndSubCategoryAsync(userId, dto.SubCategoryId, ct);
+
+            if (existingAttempt.Any())
+                throw new Exception("Quiz already submitted");
 
             var quizAttemptId = Guid.NewGuid();
 

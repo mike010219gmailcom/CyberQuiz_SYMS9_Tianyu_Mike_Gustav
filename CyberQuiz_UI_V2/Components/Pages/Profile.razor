@@ -1,21 +1,13 @@
 @page "/profile"
 @rendermode InteractiveServer
 @using System.Net.Http.Json
-@using CyberQuiz_UI_V2.Services
 @inject HttpClient Http
 @inject NavigationManager Navigation
-@inject TokenService TokenService
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider? AuthProvider
 
 <PageTitle>Profil</PageTitle>
 
 <div class="container py-4">
-    <!-- Header med Tillbaka-knapp -->
-    <div class="mb-4">
-        <a href="/start" class="btn btn-outline-secondary btn-sm mb-3">
-            ← Tillbaka till start
-        </a>
-    </div>
-
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="mb-0">Profil</h2>
@@ -24,7 +16,7 @@
         <div class="text-end">
             @if (!string.IsNullOrEmpty(userName))
             {
-                <div class="fw-semibold">👤 @userName</div>
+                <div class="fw-semibold">@userName</div>
             }
         </div>
     </div>
@@ -216,52 +208,25 @@
 
     protected override async Task OnInitializedAsync()
     {
-        TrySetUserName();
+        await TrySetUserNameAsync();
         await LoadProfileAsync();
     }
 
-    private void TrySetUserName()
+    private async Task TrySetUserNameAsync()
     {
+        if (AuthProvider is null)
+            return;
+
         try
         {
-            var token = TokenService.GetToken();
-            if (string.IsNullOrEmpty(token))
-                return;
-
-            var parts = token.Split('.');
-            if (parts.Length != 3)
-                return;
-
-            var payload = parts[1];
-            var base64 = payload.PadRight(payload.Length + (4 - payload.Length % 4) % 4, '=')
-                                .Replace('-', '+').Replace('_', '/');
-
-            var json = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(base64));
-
-            var searchPatterns = new[] 
-            { 
-                "\"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name\":\"",
-                "\"name\":\"",
-                "\"unique_name\":\""
-            };
-
-            foreach (var pattern in searchPatterns)
-            {
-                if (json.Contains(pattern))
-                {
-                    var nameStart = json.IndexOf(pattern) + pattern.Length;
-                    var nameEnd = json.IndexOf("\"", nameStart);
-                    if (nameEnd > nameStart)
-                    {
-                        userName = json.Substring(nameStart, nameEnd - nameStart);
-                        return;
-                    }
-                }
-            }
+            var state = await AuthProvider.GetAuthenticationStateAsync();
+            var name = state.User.Identity?.Name;
+            if (!string.IsNullOrEmpty(name))
+                userName = name;
         }
         catch
         {
-            // Ignorera fel
+            // ignore - auth inte konfigurerad
         }
     }
 

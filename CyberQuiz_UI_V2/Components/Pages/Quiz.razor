@@ -56,14 +56,9 @@
                             </div>
 
                             <button class="btn btn-primary" 
-                                    disabled="@(selectedAnswerId == null || isSubmitting)" 
+                                    disabled="@(selectedAnswerId == null)" 
                                     @onclick="SaveAnswerAndNext">
-                                @if (isSubmitting)
-                                {
-                                    <span class="spinner-border spinner-border-sm me-2"></span>
-                                    <span>Skickar...</span>
-                                }
-                                else if (currentQuestionIndex < questions.Count - 1)
+                                @if (currentQuestionIndex < questions.Count - 1)
                                 {
                                     <span>Nästa fråga →</span>
                                 }
@@ -184,7 +179,7 @@
         selectedAnswerId = answerId;
     }
 
-    private async Task SaveAnswerAndNext()
+    private void SaveAnswerAndNext()
     {
         if (selectedAnswerId == null || currentQuestionIndex >= questions.Count)
             return;
@@ -198,20 +193,15 @@
             SelectedAnswerOptionId = selectedAnswerId.Value
         });
 
-        // Kolla om det är sista frågan INNAN vi ökar index
-        bool isLastQuestion = (currentQuestionIndex == questions.Count - 1);
-
-        if (isLastQuestion)
-        {
-            // Sista frågan → submitta direkt (await för att vänta)
-            isSubmitting = true;
-            await SubmitQuizAsync();
-            return; // Stoppa här, visa inte nästa fråga
-        }
-
-        // Inte sista frågan → gå till nästa
+        // Gå vidare till nästa fråga eller submitta
         currentQuestionIndex++;
         selectedAnswerId = null;
+
+        // Om alla frågor besvarade, submitta hela quizet
+        if (currentQuestionIndex >= questions.Count)
+        {
+            _ = SubmitQuizAsync(); // Fire and forget
+        }
     }
 
     private async Task SubmitQuizAsync()

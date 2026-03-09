@@ -1,10 +1,6 @@
 using CyberQuiz_Shared.Requests.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 namespace CyberQuiz_API.Controllers;
 
@@ -14,16 +10,11 @@ public class AuthController : ControllerBase
 {
     private readonly SignInManager<IdentityUser> _signInManager;
     private readonly UserManager<IdentityUser> _userManager;
-    private readonly IConfiguration _configuration;
 
-    public AuthController(
-        SignInManager<IdentityUser> signInManager, 
-        UserManager<IdentityUser> userManager,
-        IConfiguration configuration)
+    public AuthController(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager)
     {
         _signInManager = signInManager;
         _userManager = userManager;
-        _configuration = configuration;
     }
 
     [HttpPost("login")]
@@ -40,10 +31,10 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return Unauthorized(new { message = "Invalid username or password" });
 
-        // Generate JWT token
-        var token = GenerateJwtToken(user);
+        // If using cookie auth, sign in the user
+        await _signInManager.SignInAsync(user, request.RememberMe);
 
-        return Ok(new { token });
+        return Ok(new { message = "Logged in" });
     }
 
     [HttpPost("register")]
@@ -57,43 +48,14 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
-        // Generate JWT token for new user
-        var token = GenerateJwtToken(user);
-
-        return Ok(new { token });
+        await _signInManager.SignInAsync(user, isPersistent: false);
+        return Ok(new { message = "Registered" });
     }
 
     [HttpPost("logout")]
-    public IActionResult Logout()
+    public async Task<IActionResult> Logout()
     {
-        // With JWT, logout is handled client-side by removing the token
+        await _signInManager.SignOutAsync();
         return Ok(new { message = "Logged out" });
-    }
-
-    private string GenerateJwtToken(IdentityUser user)
-    {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? "CyberQuiz-Super-Secret-Key-Min-32-Chars-Long!";
-
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Name, user.UserName ?? ""),
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"] ?? "CyberQuizAPI",
-            audience: jwtSettings["Audience"] ?? "CyberQuizUI",
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(2),
-            signingCredentials: creds
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
