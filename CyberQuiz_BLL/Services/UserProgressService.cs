@@ -108,7 +108,7 @@ namespace CyberQuiz_BLL.Services
             }
 
             double totalAccuracy = totalAnswers > 0 ? (double)totalCorrect / totalAnswers : 0;
-            int totalAccuracyPercent = (int)(totalAccuracy * 100);
+            int totalAccuracyPercent = (int)Math.Round(totalAccuracy * 100);
 
             return new UserProfileDto
             {
