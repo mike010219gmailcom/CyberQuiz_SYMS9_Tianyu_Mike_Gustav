@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CyberQuiz.DAL;
 
+
+//IStället för att göra en scope i program.cs
 public static class DependencyInjection
 {
     public static IServiceCollection AddDal(
