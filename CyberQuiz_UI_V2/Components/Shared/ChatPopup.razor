@@ -1,0 +1,184 @@
+@using CyberQuiz_Shared.DTOs
+@inject HttpClient Http
+
+<div class="chat-popup @(IsOpen ? "open" : "")">
+    <div class="chat-header">
+        <button class="btn-close" @onclick="Close" title="Stäng">×</button>
+        <h5 class="mb-0">💬 CyberChat</h5>
+    </div>
+
+    <div class="chat-body" @ref="chatBodyRef">
+        @if (messages.Any())
+        {
+            @foreach (var msg in messages)
+            {
+                <div class="chat-message @msg.Role">
+                    <div class="message-content">
+                        @msg.Content
+                    </div>
+                    <div class="message-time">
+                        @msg.Timestamp.ToLocalTime().ToString("HH:mm")
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="text-center text-muted py-4">
+                <p>👋 Hej! Jag är CyberChat.</p>
+                <p>Ställ frågor om quizet så hjälper jag dig!</p>
+            </div>
+        }
+
+        @if (isAiTyping)
+        {
+            <div class="chat-message assistant typing">
+                <div class="message-content">
+                    <span class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </span>
+                    CyberChat skriver...
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="chat-footer">
+        <div class="input-group">
+            <input type="text" 
+                   class="form-control" 
+                   placeholder="Skriv ditt meddelande..." 
+                   @bind="userInput"
+                   @bind:event="oninput"
+                   @onkeydown="HandleKeyDown"
+                   disabled="@isAiTyping" />
+            <button class="btn btn-primary" 
+                    @onclick="SendMessage" 
+                    disabled="@(string.IsNullOrWhiteSpace(userInput) || isAiTyping)">
+                Skicka
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public QuestionContext? CurrentQuestion { get; set; }
+
+    private List<ChatMessage> messages = new();
+    private string userInput = string.Empty;
+    private bool isAiTyping = false;
+    private ElementReference chatBodyRef;
+
+    private async Task Close()
+    {
+        // Clear conversation history when closing
+        messages.Clear();
+        userInput = string.Empty;
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(userInput))
+            return;
+
+        // Add user message
+        var userMessage = new ChatMessage
+        {
+            Role = "user",
+            Content = userInput.Trim(),
+            Timestamp = DateTime.UtcNow
+        };
+        messages.Add(userMessage);
+
+        var messageToSend = userInput.Trim();
+        userInput = string.Empty;
+
+        // Show typing indicator
+        isAiTyping = true;
+        await ScrollToBottom();
+
+        try
+        {
+            // Build request
+            var request = new ChatRequest
+            {
+                UserMessage = messageToSend,
+                ConversationHistory = messages.Where(m => m.Role != "assistant" || messages.IndexOf(m) < messages.Count - 1).ToList(),
+                CurrentQuestion = CurrentQuestion
+            };
+
+            // Call API
+            var response = await Http.PostAsJsonAsync("/api/ai/chat", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var chatResponse = await response.Content.ReadFromJsonAsync<ChatResponse>();
+                if (chatResponse != null && chatResponse.Success)
+                {
+                    messages.Add(new ChatMessage
+                    {
+                        Role = "assistant",
+                        Content = chatResponse.Message,
+                        Timestamp = DateTime.UtcNow
+                    });
+                }
+                else
+                {
+                    messages.Add(new ChatMessage
+                    {
+                        Role = "assistant",
+                        Content = chatResponse?.ErrorMessage ?? "Kunde inte få svar från AI.",
+                        Timestamp = DateTime.UtcNow
+                    });
+                }
+            }
+            else
+            {
+                messages.Add(new ChatMessage
+                {
+                    Role = "assistant",
+                    Content = "Kunde inte ansluta till AI-chatten. Försök igen senare.",
+                    Timestamp = DateTime.UtcNow
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            messages.Add(new ChatMessage
+            {
+                Role = "assistant",
+                Content = $"Ett fel uppstod: {ex.Message}",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        finally
+        {
+            isAiTyping = false;
+            await ScrollToBottom();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        await Task.Delay(100); // Small delay to ensure DOM update
+        StateHasChanged();
+    }
+}

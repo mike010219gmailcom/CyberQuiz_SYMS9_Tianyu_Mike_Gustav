@@ -38,6 +38,13 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IUserProgressService, UserProgressService>();
 
+// AI Service with HttpClient for Ollama
+var ollamaBaseUrl = builder.Configuration["OllamaSettings:BaseUrl"] ?? "http://localhost:11434";
+builder.Services.AddHttpClient<IAiService, AiService>(client =>
+{
+    client.BaseAddress = new Uri(ollamaBaseUrl);
+});
+
 // Identity (behövs för default-user seed)
 builder.Services
     .AddIdentity<IdentityUser, IdentityRole>()

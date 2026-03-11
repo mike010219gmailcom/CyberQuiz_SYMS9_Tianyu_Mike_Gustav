@@ -3,6 +3,7 @@
 @using System.Net.Http.Json
 @using CyberQuiz_Shared.DTOs
 @using CyberQuiz_BLL.DTOs
+@using CyberQuiz_UI_V2.Components.Shared
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
@@ -55,23 +56,28 @@
                                 }
                             </div>
 
-                            <button class="btn btn-primary" 
-                                    disabled="@(selectedAnswerId == null || isSubmitting)" 
-                                    @onclick="SaveAnswerAndNext">
-                                @if (isSubmitting)
-                                {
-                                    <span class="spinner-border spinner-border-sm me-2"></span>
-                                    <span>Skickar...</span>
-                                }
-                                else if (currentQuestionIndex < questions.Count - 1)
-                                {
-                                    <span>Nästa fråga →</span>
-                                }
-                                else
-                                {
-                                    <span>Skicka quiz →</span>
-                                }
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary" 
+                                        disabled="@(selectedAnswerId == null || isSubmitting)" 
+                                        @onclick="SaveAnswerAndNext">
+                                    @if (isSubmitting)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                        <span>Skickar...</span>
+                                    }
+                                    else if (currentQuestionIndex < questions.Count - 1)
+                                    {
+                                        <span>Nästa fråga →</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Skicka quiz →</span>
+                                    }
+                                </button>
+                                <button class="btn btn-outline-secondary" @onclick="OpenChat">
+                                    💬 Fråga CyberChat
+                                </button>
+                            </div>
                         }
                     </div>
                     <div class="card-footer">
@@ -121,6 +127,11 @@
     }
 </div>
 
+<!-- ChatPopup Component -->
+<ChatPopup IsOpen="isChatOpen" 
+           OnClose="CloseChat" 
+           CurrentQuestion="GetCurrentQuestionContext()" />
+
 @code {
     [Parameter]
     public int SubCategoryId { get; set; }
@@ -136,6 +147,9 @@
     private int? selectedAnswerId;
 
     private QuizSummaryDto? quizSummary;
+
+    // Chat state
+    private bool isChatOpen = false;
 
     private int progressPercent => questions.Count > 0 ? (int)((currentQuestionIndex + 1) * 100.0 / questions.Count) : 0;
 
@@ -255,5 +269,30 @@
     private void GoBack()
     {
         Navigation.NavigateTo("/start");
+    }
+
+    // Chat methods
+    private void OpenChat()
+    {
+        isChatOpen = true;
+    }
+
+    private void CloseChat()
+    {
+        isChatOpen = false;
+    }
+
+    private QuestionContext? GetCurrentQuestionContext()
+    {
+        if (currentQuestionIndex >= questions.Count)
+            return null;
+
+        var question = questions[currentQuestionIndex];
+        return new QuestionContext
+        {
+            QuestionId = question.Id,
+            QuestionText = question.Text,
+            AnswerOptions = question.Options?.Select(o => o.Text).ToList() ?? new List<string>()
+        };
     }
 }
