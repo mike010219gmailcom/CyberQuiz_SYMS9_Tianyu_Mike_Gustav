@@ -7,21 +7,128 @@
 
 <PageTitle>Subkategori</PageTitle>
 
+<style>
+    .subcategory-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 3rem 2rem;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 25px rgba(118, 75, 162, 0.3);
+        text-align: center;
+    }
+
+    .subcategory-title {
+        font-size: 2.5rem;
+        font-weight: 900;
+        margin-bottom: 1rem;
+    }
+
+    .question-badge {
+        background: white;
+        color: #764ba2;
+        padding: 0.75rem 2rem;
+        border-radius: 50px;
+        font-size: 1.2rem;
+        font-weight: 700;
+        display: inline-block;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-start-quiz {
+        background: white;
+        color: #764ba2;
+        border: none;
+        padding: 15px 50px;
+        font-size: 1.2rem;
+        font-weight: 700;
+        border-radius: 50px;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-start-quiz:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        color: #764ba2;
+    }
+
+    .btn-back-link {
+        color: rgba(255, 255, 255, 0.9);
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-back-link:hover {
+        color: white;
+        transform: translateX(-5px);
+        display: inline-block;
+    }
+
+    .results-card {
+        border: none;
+        border-radius: 15px;
+        background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+        transition: all 0.3s ease;
+    }
+
+    .results-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
+    }
+
+    .accuracy-display {
+        font-size: 4rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .breadcrumb-custom {
+        background: white;
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .breadcrumb-custom .breadcrumb-item a {
+        color: #764ba2;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .breadcrumb-custom .breadcrumb-item a:hover {
+        color: #667eea;
+    }
+
+    .breadcrumb-custom .breadcrumb-item.active {
+        color: #764ba2;
+        font-weight: 700;
+    }
+</style>
+
 <div class="container py-4">
     @if (isLoading)
     {
         <div class="text-center py-5">
-            <div class="spinner-border" role="status">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
                 <span class="visually-hidden">Laddar...</span>
             </div>
+            <p class="mt-3 text-muted">Laddar subkategori...</p>
         </div>
     }
     else if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="alert alert-warning">
+        <div class="alert alert-warning border-0 shadow-sm" style="border-radius: 15px;">
             <strong>Info:</strong> @errorMessage
             <div class="mt-3">
-                <a href="/start" class="btn btn-secondary">← Tillbaka till kategorier</a>
+                <a href="/start" class="btn btn-outline-secondary" style="border-radius: 25px;">
+                    Tillbaka till kategorier
+                </a>
             </div>
         </div>
     }
@@ -29,58 +136,57 @@
     {
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <!--Bbreadcrumb navi -->
-                <nav aria-label="breadcrumb" class="mb-3">
-                    <ol class="breadcrumb">
+                <!-- Breadcrumb Navigation -->
+                <nav aria-label="breadcrumb" class="mb-4">
+                    <ol class="breadcrumb breadcrumb-custom mb-0">
                         <li class="breadcrumb-item"><a href="/start">Kategorier</a></li>
                         <li class="breadcrumb-item active" aria-current="page">@subCategory.Name</li>
                     </ol>
                 </nav>
 
-                <!-- Subkategori Card -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-body text-center py-5">
-                        <div class="mb-3">
-                            <span class="badge bg-success fs-3">🔓</span>
-                        </div>
+                <!-- Subkategori Header Card -->
+                <div class="subcategory-header shadow-lg mb-4">
+                    <h1 class="subcategory-title">@subCategory.Name</h1>
 
-                        <h2 class="mb-3">@subCategory.Name</h2>
+                    <div class="question-badge mb-4">
+                        @subCategory.QuestionCount frågor
+                    </div>
 
-                        <p class="lead mb-4">
-                            <span class="badge bg-primary fs-5">@subCategory.QuestionCount frågor</span>
-                        </p>
-
-                        <button class="btn btn-primary btn-lg" @onclick="StartQuiz">
-                            Starta quiz →
+                    <div class="mt-4">
+                        <button class="btn btn-start-quiz" @onclick="StartQuiz">
+                            Starta quiz
                         </button>
-                        <div class="mt-3">
-                            <a href="/start" class="btn btn-link">← Tillbaka till kategorier</a>
-                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <a href="/start" class="btn-back-link">
+                            Tillbaka till kategorier
+                        </a>
                     </div>
                 </div>
 
                 <!-- Tidigare resultat (om det finns) -->
                 @if (accuracy.HasValue)
                 {
-                    <div class="card shadow-sm">
-                        <div class="card-header">
-                            <h5 class="mb-0">Din tidigare prestation</h5>
+                    <div class="card results-card shadow">
+                        <div class="card-header" style="background: white; border: none; padding: 1.5rem;">
+                            <h5 class="mb-0 fw-bold" style="color: #764ba2;">Din tidigare prestation</h5>
                         </div>
-                        <div class="card-body text-center">
-                            <div class="display-4 mb-2">
-                                <span class="@GetAccuracyColorClass(accuracy.Value)">@accuracy.Value%</span>
+                        <div class="card-body text-center p-5">
+                            <div class="accuracy-display mb-3">
+                                @accuracy.Value%
                             </div>
-                            <p class="text-muted mb-0">Total accuracy för denna subkategori</p>
-                            
+                            <p class="text-muted mb-4 fs-5">Total accuracy för denna subkategori</p>
+
                             @if (accuracy.Value >= 80)
                             {
-                                <div class="alert alert-success mt-3 mb-0">
+                                <div class="alert alert-success border-0 mb-0" style="border-radius: 15px;">
                                     <strong>Bra jobbat!</strong> Du har nått 80%-spärren.
                                 </div>
                             }
                             else if (accuracy.Value > 0)
                             {
-                                <div class="alert alert-info mt-3 mb-0">
+                                <div class="alert alert-info border-0 mb-0" style="border-radius: 15px;">
                                     Du kan göra om quizet för att förbättra ditt resultat.
                                 </div>
                             }
@@ -95,6 +201,10 @@
 @code {
     [Parameter]
     public int SubCategoryId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "name")]
+    public string? Name { get; set; }
 
     private bool isLoading = true;
     private string? errorMessage;
@@ -124,7 +234,7 @@
                     subCategory = new SubCategoryDetailModel
                     {
                         Id = SubCategoryId,
-                        Name = $"Subkategori {SubCategoryId}", // Temporary - visa ID tills vi får namn
+                        Name = !string.IsNullOrWhiteSpace(Name) ? Name : $"Subkategori {SubCategoryId}",
                         QuestionCount = questions.Count
                     };
 
@@ -146,7 +256,7 @@
                 subCategory = new SubCategoryDetailModel
                 {
                     Id = SubCategoryId,
-                    Name = $"Subkategori {SubCategoryId}",
+                    Name = !string.IsNullOrWhiteSpace(Name) ? Name : $"Subkategori {SubCategoryId}",
                     QuestionCount = 0
                 };
                 errorMessage = "Inga frågor tillgängliga än för denna subkategori. Kom tillbaka snart!";

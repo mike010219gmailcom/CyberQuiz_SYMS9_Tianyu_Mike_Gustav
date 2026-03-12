@@ -9,21 +9,159 @@
 
 <PageTitle>Quiz</PageTitle>
 
-<div class="container py-4">
+<style>
+    .quiz-container {
+        min-height: 80vh;
+    }
+
+    .quiz-card {
+        border: none;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(118, 75, 162, 0.15);
+    }
+
+    .quiz-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+    }
+
+    .quiz-progress {
+        height: 10px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .quiz-progress-bar {
+        background: white;
+        border-radius: 10px;
+        transition: width 0.4s ease;
+    }
+
+    .question-text {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 2rem;
+    }
+
+    .answer-option {
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 1.2rem;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .answer-option:hover {
+        border-color: #764ba2;
+        background: #f8f9fa;
+        transform: translateX(5px);
+    }
+
+    .answer-option.selected {
+        border-color: #764ba2;
+        background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+        box-shadow: 0 4px 15px rgba(118, 75, 162, 0.2);
+    }
+
+    .answer-option input[type="radio"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .btn-next {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 12px 35px;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-next:hover:not(:disabled) {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(118, 75, 162, 0.4);
+        color: white;
+    }
+
+    .btn-next:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .btn-chat {
+        border: 2px solid #764ba2;
+        color: #764ba2;
+        padding: 12px 25px;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .btn-chat:hover {
+        background: #764ba2;
+        color: white;
+        transform: translateY(-3px);
+    }
+
+    .results-card {
+        border: none;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+        box-shadow: 0 8px 25px rgba(118, 75, 162, 0.2);
+    }
+
+    .score-display {
+        font-size: 4rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .btn-back {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 12px 35px;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-back:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(118, 75, 162, 0.4);
+        color: white;
+    }
+</style>
+
+<div class="container py-4 quiz-container">
     @if (isLoading)
     {
         <div class="text-center py-5">
-            <div class="spinner-border" role="status">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
                 <span class="visually-hidden">Laddar quiz...</span>
             </div>
+            <p class="mt-3 text-muted">Förbereder ditt quiz...</p>
         </div>
     }
     else if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="alert alert-danger">
+        <div class="alert alert-danger border-0 shadow-sm" style="border-radius: 15px;">
             <strong>Fel:</strong> @errorMessage
             <div class="mt-3">
-                <button class="btn btn-secondary" @onclick="GoBack">Tillbaka till start</button>
+                <button class="btn btn-outline-secondary" @onclick="GoBack" style="border-radius: 25px;">
+                    Tillbaka till start
+                </button>
             </div>
         </div>
     }
@@ -31,33 +169,47 @@
     {
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <div class="card shadow-sm">
-                    <div class="card-header">
-                        <h4 class="mb-0">Quiz</h4>
-                        <small class="text-muted">Fråga @(currentQuestionIndex + 1) av @questions.Count</small>
+                <div class="card quiz-card">
+                    <div class="quiz-header">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h4 class="mb-0 fw-bold">Quiz</h4>
+                            <span class="badge bg-white text-dark px-3 py-2" style="font-size: 0.9rem;">
+                                Fråga @(currentQuestionIndex + 1) av @questions.Count
+                            </span>
+                        </div>
+                        <div class="quiz-progress mt-3">
+                            <div class="quiz-progress-bar" style="width: @progressPercent%"></div>
+                        </div>
                     </div>
-                    <div class="card-body">
+
+                    <div class="card-body p-4">
                         @if (currentQuestionIndex < questions.Count)
                         {
                             var question = questions[currentQuestionIndex];
 
-                            <h5 class="mb-4">@question.Text</h5>
+                            <div class="question-text">
+                                @question.Text
+                            </div>
 
-                            <div class="list-group mb-4">
+                            <div class="mb-4">
                                 @foreach (var option in question.Options ?? Enumerable.Empty<AnswerOptionDto>())
                                 {
-                                    <label class="list-group-item list-group-item-action" style="cursor: pointer;">
-                                        <input type="radio" name="answer" value="@option.Id" 
-                                               checked="@(selectedAnswerId == option.Id)"
-                                               @onchange="() => SelectAnswer(option.Id)" 
-                                               class="form-check-input me-2" />
-                                        @option.Text
+                                    <label class="answer-option @(selectedAnswerId == option.Id ? "selected" : "")">
+                                        <div class="d-flex align-items-center">
+                                            <input type="radio" 
+                                                   name="answer" 
+                                                   value="@option.Id" 
+                                                   checked="@(selectedAnswerId == option.Id)"
+                                                   @onchange="() => SelectAnswer(option.Id)" 
+                                                   class="me-3" />
+                                            <span style="flex: 1;">@option.Text</span>
+                                        </div>
                                     </label>
                                 }
                             </div>
 
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-primary" 
+                            <div class="d-flex gap-3 flex-wrap">
+                                <button class="btn btn-next" 
                                         disabled="@(selectedAnswerId == null || isSubmitting)" 
                                         @onclick="SaveAnswerAndNext">
                                     @if (isSubmitting)
@@ -67,28 +219,18 @@
                                     }
                                     else if (currentQuestionIndex < questions.Count - 1)
                                     {
-                                        <span>Nästa fråga →</span>
+                                        <span>Nästa fråga</span>
                                     }
                                     else
                                     {
-                                        <span>Skicka quiz →</span>
+                                        <span>Skicka quiz</span>
                                     }
                                 </button>
-                                <button class="btn btn-outline-secondary" @onclick="OpenChat">
-                                    💬 Fråga CyberChat
+                                <button class="btn btn-chat" @onclick="OpenChat">
+                                    Fråga CyberChat
                                 </button>
                             </div>
                         }
-                    </div>
-                    <div class="card-footer">
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar" role="progressbar" 
-                                 style="width: @progressPercent%" 
-                                 aria-valuenow="@progressPercent" 
-                                 aria-valuemin="0" 
-                                 aria-valuemax="100">
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -97,29 +239,35 @@
     else if (showResults && quizSummary != null)
     {
         <div class="row justify-content-center">
-            <div class="col-lg-6">
-                <div class="card shadow-sm">
-                    <div class="card-body text-center">
-                        <h3 class="mb-4">Quiz slutfört!</h3>
-                        <div class="display-4 mb-3">
+            <div class="col-lg-7">
+                <div class="card results-card shadow-lg">
+                    <div class="card-body text-center p-5">
+                        <h3 class="mb-4 fw-bold" style="color: #764ba2;">Quiz slutfört!</h3>
+
+                        <div class="score-display mb-3">
                             @quizSummary.CorrectAnswers / @quizSummary.TotalQuestions
                         </div>
-                        <p class="lead">@((int)quizSummary.ScorePercentage)% rätt</p>
+
+                        <p class="lead mb-4" style="color: #555; font-size: 1.5rem; font-weight: 600;">
+                            @((int)quizSummary.ScorePercentage)% rätt
+                        </p>
 
                         @if (quizSummary.Passed)
                         {
-                            <div class="alert alert-success">
+                            <div class="alert alert-success border-0 mb-4" style="border-radius: 15px; background: #d4edda;">
                                 <strong>Grattis!</strong> Du har låst upp nästa subkategori.
                             </div>
                         }
                         else
                         {
-                            <div class="alert alert-warning">
+                            <div class="alert alert-warning border-0 mb-4" style="border-radius: 15px; background: #fff3cd;">
                                 Du behöver minst 80% för att låsa upp nästa subkategori.
                             </div>
                         }
 
-                        <button class="btn btn-primary" @onclick="GoBack">Tillbaka till start</button>
+                        <button class="btn btn-back" @onclick="GoBack">
+                            Tillbaka till start
+                        </button>
                     </div>
                 </div>
             </div>
