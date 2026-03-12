@@ -4,22 +4,39 @@
 
 <PageTitle>CyberQuiz</PageTitle>
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8 text-center">
-            <h1 class="display-4 mb-3" style="font-family: 'Orbitron', sans-serif; font-weight: 900; letter-spacing: 2px; color: #9d4edd;">
-                CyberQuiz
-            </h1>
-            <p class="lead mb-4">Sharpen your cyber instincts. One question at a time.</p>
+<div class="home-container">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 col-md-8">
+                <div class="card home-card shadow-lg">
+                    <div class="card-body text-center p-5">
+                        <!-- Title -->
+                        <h1 class="home-title mb-3">
+                            <span class="gradient-text">CyberQuiz</span>
+                        </h1>
 
-            <div class="d-flex justify-content-center gap-2">
-                <a class="btn btn-primary btn-lg" href="/Login">Logga in</a>
-                <a class="btn btn-outline-secondary btn-lg" href="/register">Registrera</a>
+                        <!-- Subtitle -->
+                        <p class="lead text-muted mb-4">
+                            Sharpen your cyber instincts. One question at a time.
+                        </p>
+
+                        <!-- Buttons -->
+                        <div class="d-flex flex-column flex-sm-row justify-content-center gap-3 mb-4">
+                            <a class="btn btn-custom-primary btn-lg" href="/Login">
+                                Logga in
+                                <span class="arrow ms-2">→</span>
+                            </a>
+                            <a class="btn btn-custom-outline btn-lg" href="/register">
+                                Registrera
+                            </a>
+                        </div>
+
+                        <!-- Footer -->
+                        <hr class="my-4" />
+                        <p class="text-muted small mb-0">© 2026 CyberQuiz. All Rights Reserved.</p>
+                    </div>
+                </div>
             </div>
-
-            <hr class="my-5" />
-
-            <p class="text-muted">©2026 All Rights Reserved</p>
         </div>
     </div>
 </div>

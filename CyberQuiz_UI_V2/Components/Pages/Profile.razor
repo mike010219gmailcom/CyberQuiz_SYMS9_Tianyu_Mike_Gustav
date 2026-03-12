@@ -8,39 +8,135 @@
 
 <PageTitle>Profil</PageTitle>
 
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 15px;
+        color: white;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 20px rgba(118, 75, 162, 0.3);
+    }
+
+    .stats-card {
+        border: none;
+        border-radius: 15px;
+        background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+        transition: all 0.3s ease;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(118, 75, 162, 0.3);
+    }
+
+    .progress-card {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+
+    .settings-card {
+        border: none;
+        border-radius: 15px;
+        transition: all 0.3s ease;
+    }
+
+    .settings-card:hover {
+        box-shadow: 0 10px 25px rgba(118, 75, 162, 0.2);
+    }
+
+    .custom-progress {
+        height: 25px;
+        border-radius: 15px;
+        background: #e9ecef;
+    }
+
+    .custom-progress-bar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        transition: width 0.6s ease;
+    }
+
+    .btn-custom {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 10px 25px;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(118, 75, 162, 0.4);
+        color: white;
+    }
+
+    .btn-back {
+        background: white;
+        color: #764ba2;
+        border: 2px solid #764ba2;
+        padding: 8px 20px;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-back:hover {
+        background: #764ba2;
+        color: white;
+        transform: translateX(-5px);
+    }
+
+    .accuracy-badge {
+        font-size: 4rem;
+        font-weight: 900;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+</style>
+
 <div class="container py-4">
-    <!-- Header med Tillbaka-knapp -->
+    <!-- Back Button -->
     <div class="mb-4">
-        <a href="/start" class="btn btn-outline-secondary btn-sm mb-3">
+        <a href="/start" class="btn btn-back text-decoration-none">
             ← Tillbaka till start
         </a>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-0">Profil</h2>
-            <small class="text-muted">Din progression och kontoinställningar</small>
-        </div>
-        <div class="text-end">
-            @if (!string.IsNullOrEmpty(userName))
-            {
-                <div class="fw-semibold">👤 @userName</div>
-            }
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-1 fw-bold">👤 Din Profil</h2>
+                <p class="mb-0 opacity-75">Progression och kontoinställningar</p>
+            </div>
+            <div class="text-end">
+                @if (!string.IsNullOrEmpty(userName))
+                {
+                    <div class="badge px-3 py-2" style="background: white; color: #764ba2; font-size: 1rem;">
+                        @userName
+                    </div>
+                }
+            </div>
         </div>
     </div>
 
     @if (isLoading)
     {
         <div class="text-center py-5">
-            <div class="spinner-border" role="status">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
                 <span class="visually-hidden">Laddar profil...</span>
             </div>
+            <p class="mt-3 text-muted">Laddar din profil...</p>
         </div>
     }
     else if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="alert alert-warning">
-            <strong>Info:</strong> @errorMessage
+        <div class="alert alert-warning border-0 shadow-sm" style="border-radius: 15px;">
+            <strong>⚠️ Info:</strong> @errorMessage
         </div>
     }
     else if (profileData != null)
@@ -48,29 +144,26 @@
         <!-- Total Progression -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card shadow-sm text-center">
+                <div class="card stats-card shadow text-center">
                     <div class="card-body py-5">
-                        <h3 class="mb-3">Din totala progression</h3>
-                        <div class="display-3 mb-3">
-                            <span class="@GetAccuracyColorClass(profileData.TotalAccuracyPercent)">
-                                @profileData.TotalAccuracyPercent%
-                            </span>
+                        <h3 class="mb-4" style="color: #764ba2;">Din totala progression</h3>
+                        <div class="accuracy-badge mb-3">
+                            @profileData.TotalAccuracyPercent%
                         </div>
-                        <p class="lead mb-3">@profileData.TotalCorrect av @profileData.TotalAnswers frågor rätt</p>
-                        <div class="progress" style="height: 20px;">
-                            <div class="progress-bar @GetProgressBarClass(profileData.TotalAccuracyPercent)" 
+                        <p class="lead mb-4 text-muted">
+                            @profileData.TotalCorrect av @profileData.TotalAnswers frågor rätt
+                        </p>
+                        <div class="custom-progress">
+                            <div class="custom-progress-bar" 
                                  role="progressbar" 
-                                 style="width: @profileData.TotalAccuracyPercent%" 
-                                 aria-valuenow="@profileData.TotalAccuracyPercent" 
-                                 aria-valuemin="0" 
-                                 aria-valuemax="100">
-                                @profileData.TotalAccuracyPercent%
+                                 style="width: @profileData.TotalAccuracyPercent%">
+                                <span class="px-3 fw-bold">@profileData.TotalAccuracyPercent%</span>
                             </div>
                         </div>
                         @if (profileData.TotalAccuracyPercent >= 80)
                         {
-                            <div class="alert alert-success mt-3 mb-0">
-                                <strong>Utmärkt!</strong> Du har nått 80%-målet.
+                            <div class="alert alert-success border-0 mt-4 mb-0" style="border-radius: 15px;">
+                                <strong> Grattis!</strong> Du har nått 80%-målet.
                             </div>
                         }
                     </div>
@@ -81,43 +174,41 @@
         <!-- Progression per Subkategori -->
         <div class="row mb-4">
             <div class="col-12">
-                <div class="card shadow-sm">
-                    <div class="card-header">
-                        <h5 class="mb-0">Progression per subkategori</h5>
+                <div class="card progress-card shadow">
+                    <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem;">
+                        <h5 class="mb-0 fw-bold"> Progression per subkategori</h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         @if (profileData.PerSubCategory?.Any() == true)
                         {
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0">
-                                    <thead>
+                                    <thead style="background: #f8f9fa;">
                                         <tr>
-                                            <th>Subkategori</th>
-                                            <th style="width: 50%;">Progression</th>
-                                            <th class="text-end">Accuracy</th>
+                                            <th style="padding: 1rem;">Subkategori</th>
+                                            <th style="width: 50%; padding: 1rem;">Progression</th>
+                                            <th class="text-end" style="padding: 1rem;">Accuracy</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach (var sub in profileData.PerSubCategory)
                                         {
-                                            <tr>
-                                                <td>
-                                                    <strong>@sub.SubCategoryName</strong>
+                                            <tr style="transition: all 0.3s ease;">
+                                                <td style="padding: 1rem;">
+                                                    <strong style="color: #764ba2;"> @sub.SubCategoryName</strong>
                                                 </td>
-                                                <td>
-                                                    <div class="progress" style="height: 25px;">
-                                                        <div class="progress-bar @GetProgressBarClass(sub.AccuracyPercent)" 
+                                                <td style="padding: 1rem;">
+                                                    <div class="custom-progress">
+                                                        <div class="custom-progress-bar" 
                                                              role="progressbar" 
-                                                             style="width: @sub.AccuracyPercent%" 
-                                                             aria-valuenow="@sub.AccuracyPercent" 
-                                                             aria-valuemin="0" 
-                                                             aria-valuemax="100">
-                                                            @sub.AccuracyPercent%
+                                                             style="width: @sub.AccuracyPercent%">
+                                                            <span class="px-3 fw-bold">@sub.AccuracyPercent%</span>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td class="text-end">
-                                                    <span class="badge @GetBadgeClass(sub.AccuracyPercent) fs-6">
+                                                <td class="text-end" style="padding: 1rem;">
+                                                    <span class="badge px-3 py-2" 
+                                                          style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 1rem;">
                                                         @sub.AccuracyPercent%
                                                     </span>
                                                 </td>
@@ -129,8 +220,8 @@
                         }
                         else
                         {
-                            <div class="alert alert-info mb-0">
-                                Du har inte svarat på några frågor än. <a href="/start" class="alert-link">Gå till Start</a> för att börja!
+                            <div class="alert alert-info border-0 mb-0" style="border-radius: 15px;">
+                                📚 Du har inte svarat på några frågor än. <a href="/start" class="alert-link fw-bold">Gå till Start</a> för att börja!
                             </div>
                         }
                     </div>
@@ -138,23 +229,24 @@
             </div>
         </div>
 
-        <!-- Ändra E-post -->
+        <!-- Settings Cards -->
         <div class="row mb-4">
-            <div class="col-lg-6">
-                <div class="card shadow-sm">
-                    <div class="card-header">
-                        <h5 class="mb-0">Ändra e-post</h5>
+            <!-- Ändra E-post -->
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <div class="card settings-card shadow">
+                    <div class="card-header" style="background: #f8f9fa; border-bottom: 2px solid #e1bee7; padding: 1.5rem;">
+                        <h5 class="mb-0 fw-bold" style="color: #764ba2;">Ändra e-post</h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <div class="mb-3">
-                            <label class="form-label">Ny e-post</label>
-                            <input type="email" class="form-control" @bind="newEmail" placeholder="exempel@mail.com" />
+                            <label class="form-label fw-semibold">Ny e-post</label>
+                            <input type="email" class="form-control" @bind="newEmail" placeholder="exempel@mail.com" style="border-radius: 10px; padding: 12px;" />
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Bekräfta e-post</label>
-                            <input type="email" class="form-control" @bind="confirmEmail" placeholder="exempel@mail.com" />
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Bekräfta e-post</label>
+                            <input type="email" class="form-control" @bind="confirmEmail" placeholder="exempel@mail.com" style="border-radius: 10px; padding: 12px;" />
                         </div>
-                        <button class="btn btn-primary" @onclick="ChangeEmail" disabled="@isChangingEmail">
+                        <button class="btn btn-custom w-100" @onclick="ChangeEmail" disabled="@isChangingEmail">
                             @if (isChangingEmail)
                             {
                                 <span class="spinner-border spinner-border-sm me-2"></span>
@@ -167,7 +259,9 @@
                         </button>
                         @if (!string.IsNullOrEmpty(emailMessage))
                         {
-                            <div class="alert @(emailMessageIsError ? "alert-danger" : "alert-success") mt-3 mb-0">@emailMessage</div>
+                            <div class="alert @(emailMessageIsError ? "alert-danger" : "alert-success") border-0 mt-3 mb-0" style="border-radius: 10px;">
+                                @emailMessage
+                            </div>
                         }
                     </div>
                 </div>
@@ -175,24 +269,24 @@
 
             <!-- Ändra Lösenord -->
             <div class="col-lg-6">
-                <div class="card shadow-sm">
-                    <div class="card-header">
-                        <h5 class="mb-0">Ändra lösenord</h5>
+                <div class="card settings-card shadow">
+                    <div class="card-header" style="background: #f8f9fa; border-bottom: 2px solid #e1bee7; padding: 1.5rem;">
+                        <h5 class="mb-0 fw-bold" style="color: #764ba2;">Ändra lösenord</h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-4">
                         <div class="mb-3">
-                            <label class="form-label">Nuvarande lösenord</label>
-                            <input type="password" class="form-control" @bind="currentPassword" placeholder="••••••••" />
+                            <label class="form-label fw-semibold">Nuvarande lösenord</label>
+                            <input type="password" class="form-control" @bind="currentPassword" placeholder="••••••••" style="border-radius: 10px; padding: 12px;" />
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Nytt lösenord</label>
-                            <input type="password" class="form-control" @bind="newPassword" placeholder="••••••••" />
+                            <label class="form-label fw-semibold">Nytt lösenord</label>
+                            <input type="password" class="form-control" @bind="newPassword" placeholder="••••••••" style="border-radius: 10px; padding: 12px;" />
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Bekräfta nytt lösenord</label>
-                            <input type="password" class="form-control" @bind="confirmPassword" placeholder="••••••••" />
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Bekräfta nytt lösenord</label>
+                            <input type="password" class="form-control" @bind="confirmPassword" placeholder="••••••••" style="border-radius: 10px; padding: 12px;" />
                         </div>
-                        <button class="btn btn-primary" @onclick="ChangePassword" disabled="@isChangingPassword">
+                        <button class="btn btn-custom w-100" @onclick="ChangePassword" disabled="@isChangingPassword">
                             @if (isChangingPassword)
                             {
                                 <span class="spinner-border spinner-border-sm me-2"></span>
@@ -205,7 +299,9 @@
                         </button>
                         @if (!string.IsNullOrEmpty(passwordMessage))
                         {
-                            <div class="alert @(passwordMessageIsError ? "alert-danger" : "alert-success") mt-3 mb-0">@passwordMessage</div>
+                            <div class="alert @(passwordMessageIsError ? "alert-danger" : "alert-success") border-0 mt-3 mb-0" style="border-radius: 10px;">
+                                @passwordMessage
+                            </div>
                         }
                     </div>
                 </div>
