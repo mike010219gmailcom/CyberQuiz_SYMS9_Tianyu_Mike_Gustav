@@ -1,10 +1,12 @@
 using CyberQuiz.DAL;
 using CyberQuiz.DAL.Data;
+using CyberQuiz.DAL.Repositories;
 using CyberQuiz.DAL.Seeding;
 using CyberQuiz_BLL.Interfaces;
 using CyberQuiz_BLL.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -30,8 +32,15 @@ builder.Services.AddCors(options =>
     });
 });
 
-// DAL (DbContext + repositories)
-builder.Services.AddDal(builder.Configuration);
+// DbContext
+builder.Services.AddDbContext<CyberQuizDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Repositories
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IQuizRepository, QuizRepository>();
+builder.Services.AddScoped<IUserResultRepository, UserResultRepository>();
 
 // BLL Services
 builder.Services.AddScoped<ICategoryService, CategoryService>();
